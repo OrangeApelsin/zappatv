@@ -272,3 +272,30 @@ test("StartPage shows Now Playing resume banner and navigates to it with UP + OK
   fireEvent.keyDown(window, { keyCode: KEY.ENTER });
   expect(onResumePlayback).toHaveBeenCalledTimes(1);
 });
+
+test("StartPage preloads catalog when focusing movies or series card", () => {
+  const onPreloadKind = vi.fn();
+  render(
+    <StartPage
+      lastChannel={sampleChannel}
+      onSelectTv={() => {}}
+      onSelectMovies={() => {}}
+      onSelectSeries={() => {}}
+      onSelectSearch={() => {}}
+      onSelectSettings={() => {}}
+      onExitApp={() => {}}
+      onPreloadKind={onPreloadKind}
+    />,
+  );
+
+  // Initial focus on Live TV
+  expect(onPreloadKind).not.toHaveBeenCalled();
+
+  // Move right to movies
+  fireEvent.keyDown(window, { keyCode: KEY.RIGHT });
+  expect(onPreloadKind).toHaveBeenCalledWith("movie");
+
+  // Move right to series
+  fireEvent.keyDown(window, { keyCode: KEY.RIGHT });
+  expect(onPreloadKind).toHaveBeenCalledWith("series");
+});

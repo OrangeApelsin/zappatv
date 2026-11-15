@@ -719,6 +719,10 @@ export default function App() {
     if (view !== "home" || !library.playlistId || library.sourceVersion < 1) return;
     void useLibrary.getState().loadHomeCategories("movie");
     void useLibrary.getState().loadHomeCategories("series");
+    const cancel = whenIdle(() => {
+      void useLibrary.getState().loadVodCatalog("movie", false, false);
+    }, 1500);
+    return cancel;
   }, [view, library.playlistId, library.sourceVersion]);
 
   useEffect(() => {
@@ -4996,6 +5000,9 @@ export default function App() {
           }}
           onExitApp={() => {
             setShowExit(true);
+          }}
+          onPreloadKind={(kind) => {
+            void useLibrary.getState().loadVodCatalog(kind, false, false);
           }}
         />
       )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { KEY, useRemote } from "../hooks/useRemote";
 import { programmeProgress } from "../services/epgBatch";
@@ -29,6 +29,7 @@ export interface StartPageProps {
   onSelectSearch: () => void;
   onSelectSettings: () => void;
   onExitApp: () => void;
+  onPreloadKind?: (kind: "movie" | "series") => void;
 }
 
 export function StartPage({
@@ -46,10 +47,16 @@ export function StartPage({
   onSelectSearch,
   onSelectSettings,
   onExitApp,
+  onPreloadKind,
 }: StartPageProps) {
   const { t, direction, number } = useLocale();
   const [focus, setFocus] = useState<StartFocusId>("tv");
   const hasNowPlaying = Boolean(nowPlaying && onResumePlayback);
+
+  useEffect(() => {
+    if (focus === "movies") onPreloadKind?.("movie");
+    else if (focus === "series") onPreloadKind?.("series");
+  }, [focus, onPreloadKind]);
 
   const nowSeconds = Math.floor(Date.now() / 1000);
   const currentProg = guide?.current;
@@ -214,7 +221,10 @@ export function StartPage({
               setFocus("movies");
               onSelectMovies();
             }}
-            onMouseEnter={() => setFocus("movies")}
+            onMouseEnter={() => {
+              setFocus("movies");
+              onPreloadKind?.("movie");
+            }}
           >
             <div className="home-vod-content">
               <div className="home-tile-icon" aria-hidden="true">
@@ -239,7 +249,10 @@ export function StartPage({
               setFocus("series");
               onSelectSeries();
             }}
-            onMouseEnter={() => setFocus("series")}
+            onMouseEnter={() => {
+              setFocus("series");
+              onPreloadKind?.("series");
+            }}
           >
             <div className="home-vod-content">
               <div className="home-tile-icon" aria-hidden="true">
