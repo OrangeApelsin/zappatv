@@ -2,6 +2,29 @@
 
 Notable changes, newest first, in the format of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1] - 2026-11-15
+
+### Added
+
+- **Subtitle HTML/CSS Formatting (`TICKET-2301`)**: Built dedicated `SubtitleRenderer` that interprets HTML and CSS markup in subtitle cues. Converts `<br>` to clean line breaks and formats `<b>`/`<strong>` (bold), `<i>`/`<em>` (italics), and `<font color="...">` (colored spans), while stripping unhandled tags so raw markup never leaks onto the picture.
+- **"Original" Screen Fit Option & Default (`TICKET-2303`)**: Added `"original"` screen fit mode preserving native untouched broadcast geometry without scaling or zoom distortion via AVPlay letterbox, and configured it as the application default.
+- **Minimalist "Up Next" Corner Card + Circular Progress Ring (`TICKET-2308`)**: Replaced the countdown overlay with a sleek 480px bottom-right preview card anchored in the TV title-safe area (`bottom: 64px; right: 72px;`). Features a 16:9 episode thumbnail with dark scrim, centered 56×56 SVG progress ring ($r=24$, circumference $\approx 150.8$) animated proportionally each second with tabular-nums countdown, clamped episode title, and close button. GPU-composited for Tizen 5.0 without `backdrop-filter: blur()`.
+- **Grid View "Now Playing" Title Display with Horizontal Marquee (`TICKET-2307`)**: The "Now Playing" toolbar button in VOD and tile grid views now displays the currently playing media title, with smooth CSS horizontal marquee scrolling on long titles while preserving locked button geometry.
+
+### Changed
+
+- **VOD Startup Caching & Incremental Sync Optimization in `zappa-vod` (`TICKET-2302`)**: Enforced a strict cache-first startup strategy using the dedicated 200MB IndexedDB database (`zappa-vod`). Catalogs hydrate in $<300$ms on cold boot before network requests, and background sync leverages timestamps and catalog versions (`action=get_vod_version` / `/api/vod/version`) to skip redundant full-catalog re-downloads.
+- **Settings About QR-Code & Repository Target (`TICKET-2305`)**: Updated QR code and repository links across the About page in Settings to target `https://git.halvmj.uk/dany/zappatv`.
+- **Modernized Authentic Screenshots (`TICKET-2309`)**: Refreshed all 10 high-resolution application screenshots in `README.md` and `screenshots/` representing the current Zappa TV Aqua translucent interface.
+
+### Performance
+
+- **Zero-Delay Home Card Navigation (`TICKET-2306`)**: Eliminated main-thread lag when pressing cards on the Start Page to transition into Movie or Series grid views through category pre-warming and $O(1)$ resume key matching, matching Live TV's instant 0ms transition.
+
+### Fixed
+
+- **Remote Access LAN Resolution (`TICKET-2304`)**: Resolved false-positive *"Remote setup is unavailable on this network"* error when opening Remote Access in Settings by supporting active Wi-Fi, Ethernet, and CGNAT interface detection on Samsung Tizen TVs.
+
 ## [1.0] - 2026-11-14
 
 ### Added

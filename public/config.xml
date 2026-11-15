@@ -6,7 +6,7 @@
      <widget> tag this file is not well formed and libxml2, which the Tizen CLI and the WRT
      both use, refuses to parse it. -->
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
-     id="http://zappa.local/ZappaTV" version="1.0" viewmodes="maximized">
+     id="http://zappa.local/ZappaTV" version="1.1" viewmodes="maximized">
      <name>Zappa TV</name>
      <icon src="icon.png" />
      <content src="index.html" />
