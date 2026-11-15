@@ -101,6 +101,14 @@ export const SUBTITLE_STYLES = [
 
 export type SubtitleStyle = (typeof SUBTITLE_STYLES)[number]["id"];
 
+export const SUBTITLE_POSITIONS = [
+  { id: "bottom", label: "settings.subtitlePositionBottom" },
+  { id: "lower", label: "settings.subtitlePositionLower" },
+  { id: "elevated", label: "settings.subtitlePositionElevated" },
+] as const;
+
+export type SubtitlePosition = (typeof SUBTITLE_POSITIONS)[number]["id"];
+
 export const OSD_DURATIONS = [
   { id: "2s", label: "2s", ms: 2000 },
   { id: "4s", label: "4s", ms: 4000 },
@@ -270,6 +278,7 @@ interface Settings {
   preferredSubtitleLanguage: PreferredLanguage;
   subtitleSize: SubtitleSize;
   subtitleStyle: SubtitleStyle;
+  subtitlePosition: SubtitlePosition;
   osdDuration: OsdDuration;
   upNextCountdown: UpNextDuration;
   screensaverTimeout: ScreensaverTimeout;
@@ -333,6 +342,7 @@ const DEFAULTS = {
   preferredSubtitleLanguage: "none" as PreferredLanguage,
   subtitleSize: "m" as SubtitleSize,
   subtitleStyle: "translucent" as SubtitleStyle,
+  subtitlePosition: "bottom" as SubtitlePosition,
   osdDuration: "8s" as OsdDuration,
   upNextCountdown: "10s" as UpNextDuration,
   screensaverTimeout: "1m" as ScreensaverTimeout,
@@ -453,6 +463,9 @@ function load(): typeof DEFAULTS {
   }
   if (!SUBTITLE_STYLES.some((opt) => opt.id === merged.subtitleStyle)) {
     merged.subtitleStyle = DEFAULTS.subtitleStyle;
+  }
+  if (!SUBTITLE_POSITIONS.some((opt) => opt.id === merged.subtitlePosition)) {
+    merged.subtitlePosition = DEFAULTS.subtitlePosition;
   }
   if (!OSD_DURATIONS.some((opt) => opt.id === merged.osdDuration)) {
     merged.osdDuration = DEFAULTS.osdDuration;

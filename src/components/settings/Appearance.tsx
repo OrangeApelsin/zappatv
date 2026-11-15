@@ -4,6 +4,8 @@ import {
   type SubtitleSize,
   SUBTITLE_STYLES,
   type SubtitleStyle,
+  SUBTITLE_POSITIONS,
+  type SubtitlePosition,
   useSettings,
 } from "../../stores/settings";
 import { useChannels } from "../../stores/channels";
@@ -44,6 +46,15 @@ export function Appearance() {
         : opt.id === "black"
           ? t("settings.subtitleStyleBlack")
           : t("settings.subtitleStyleOutline"),
+  }));
+  const subtitlePositionOptions = SUBTITLE_POSITIONS.map((opt) => ({
+    ...opt,
+    label:
+      opt.id === "bottom"
+        ? t("settings.subtitlePositionBottom")
+        : opt.id === "lower"
+          ? t("settings.subtitlePositionLower")
+          : t("settings.subtitlePositionElevated"),
   }));
   // `load` because sorting rebuilds the lists from the playlist that is already in hand: the order
   // is applied while the channels are read, so nothing changes on screen until they are read again.
@@ -91,6 +102,14 @@ export function Appearance() {
           options={subtitleStyleOptions}
           value={s.subtitleStyle}
           onChange={(id) => s.set("subtitleStyle", id as SubtitleStyle)}
+        />
+      </Row>
+      <Row label={t("settings.subtitlePosition")} hint={t("settings.subtitlePositionHint")}>
+        <Choice
+          label={t("settings.subtitlePosition")}
+          options={subtitlePositionOptions}
+          value={s.subtitlePosition}
+          onChange={(id) => s.set("subtitlePosition", id as SubtitlePosition)}
         />
       </Row>
       <Row label={t("settings.showNumbers")} hint={t("settings.showNumbersHint")}>

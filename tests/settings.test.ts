@@ -484,23 +484,27 @@ test("account replacement clears hidden categories after the source version chan
   expect(replaced.hiddenCategories).toEqual([]);
 });
 
-test("subtitleSize and subtitleStyle are validated, persisted, and fall back to defaults", async () => {
+test("subtitleSize, subtitleStyle, and subtitlePosition are validated, persisted, and fall back to defaults", async () => {
   const { useSettings } = await load();
   const s = useSettings.getState();
   assert.equal(s.subtitleSize, "m");
   assert.equal(s.subtitleStyle, "translucent");
+  assert.equal(s.subtitlePosition, "bottom");
 
   s.set("subtitleSize", "xl");
   s.set("subtitleStyle", "outline");
+  s.set("subtitlePosition", "lower");
 
   const written = JSON.parse(localStorage.getItem(KEY) ?? "{}");
   assert.equal(written.subtitleSize, "xl");
   assert.equal(written.subtitleStyle, "outline");
+  assert.equal(written.subtitlePosition, "lower");
 
-  localStorage.setItem(KEY, JSON.stringify({ subtitleSize: "invalid", subtitleStyle: "funky" }));
+  localStorage.setItem(KEY, JSON.stringify({ subtitleSize: "invalid", subtitleStyle: "funky", subtitlePosition: "sky" }));
   const reloaded = await load();
   assert.equal(reloaded.useSettings.getState().subtitleSize, "m");
   assert.equal(reloaded.useSettings.getState().subtitleStyle, "translucent");
+  assert.equal(reloaded.useSettings.getState().subtitlePosition, "bottom");
 });
 
 test("osdDuration is validated, persisted, and falls back to defaults", async () => {

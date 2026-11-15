@@ -120,8 +120,8 @@ export function UpNextPrompt({
         <div className="up-next-scrim">
           <svg
             className="up-next-ring"
-            width="56"
-            height="56"
+            width="44"
+            height="44"
             viewBox="0 0 56 56"
             aria-hidden="true"
           >
