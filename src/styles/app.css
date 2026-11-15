@@ -6873,6 +6873,40 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
   color: var(--on-focus);
 }
 
+/* ---- Now Playing Marquee Buttons (TICKET-2307) ------------------------- */
+.home-header-btn.home-header-now-playing {
+  max-width: 240px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.home-header-btn.home-header-now-playing .now-playing-label,
+.panel-key-now-playing .now-playing-label,
+.sr-now-playing .now-playing-label,
+.vod-tab[data-tool="nowPlaying"] .now-playing-label {
+  display: inline-flex;
+  align-items: center;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.now-playing-label .teleprompter {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-header-btn.home-header-now-playing .teleprompter.overflowing .teleprompter-run,
+.panel-key-now-playing .teleprompter.overflowing .teleprompter-run,
+.sr-now-playing .teleprompter.overflowing .teleprompter-run,
+.vod-tab[data-tool="nowPlaying"] .teleprompter.overflowing .teleprompter-run {
+  animation: teleprompter-x 10s linear 1.2s infinite;
+}
+
 /* ---- OLED Protection Screensaver (TICKET-2186) ------------------------- */
 .screensaver-overlay {
   position: fixed;

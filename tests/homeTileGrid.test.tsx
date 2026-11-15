@@ -171,3 +171,32 @@ test("HomeTileGrid supports 3-zone D-pad navigation, Ch+/Ch- jumps, and skewed p
   expect(onSelectChannel).toHaveBeenCalledWith(2, channels[2]);
 });
 
+test("HomeTileGrid renders Now Playing button with marquee title and triggers resume callback", () => {
+  const channels = makeChannels(4);
+  const onResumePlayback = vi.fn();
+  const longTitle = "BBC One · Planet Earth III - Episode 5: Deserts and Grasslands";
+
+  const { container } = render(
+    <HomeTileGrid
+      channels={channels}
+      categories={[{ key: "live:1", name: "Nordic" }]}
+      model="QN55Q80TAFXZA"
+      onResumePlayback={onResumePlayback}
+      nowPlayingTitle={longTitle}
+    />,
+  );
+
+  const btn = container.querySelector(".home-header-now-playing") as HTMLButtonElement | null;
+  expect(btn).toBeTruthy();
+  expect(btn?.getAttribute("aria-label")).toContain(longTitle);
+
+  const label = btn?.querySelector(".now-playing-label");
+  expect(label).toBeTruthy();
+  expect(label?.textContent).toBe(longTitle);
+  expect(label?.querySelector(".teleprompter")).toBeTruthy();
+
+  fireEvent.click(btn!);
+  expect(onResumePlayback).toHaveBeenCalledTimes(1);
+});
+
+

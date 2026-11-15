@@ -13,6 +13,7 @@ import { useEpisodeField } from "../stores/vodBrowse";
 import { BrowseStatus } from "./BrowseStatus";
 import { EpisodeProgress } from "./EpisodeProgress";
 import { Icon } from "./Icon";
+import { Text } from "./Text";
 import { clock } from "./PlaybackBanner";
 import type { ShapedVodItem } from "../workers/vodWorker";
 
@@ -23,6 +24,7 @@ export interface SeriesViewProps {
   onToggleLayout?: () => void;
   onToggleFavourite?: () => void;
   onResumePlayback?: () => void;
+  nowPlayingTitle?: string;
 }
 
 export const SeriesView: FC<SeriesViewProps> = ({
@@ -32,6 +34,7 @@ export const SeriesView: FC<SeriesViewProps> = ({
   onToggleLayout,
   onToggleFavourite,
   onResumePlayback,
+  nowPlayingTitle,
 }) => {
   const { t, number, locale, direction } = useLocale();
   const fontSize = useSettings((state) => state.fontSizeId);
@@ -328,8 +331,18 @@ export const SeriesView: FC<SeriesViewProps> = ({
               type="button"
               className={`sr-now-playing ${focusZone === "actions" && actionIndex === 2 ? "focused" : ""}`}
               onClick={onResumePlayback}
+              aria-label={
+                nowPlayingTitle
+                  ? `${t("start.nowPlaying")}: ${nowPlayingTitle}`
+                  : t("library.backToPlayer")
+              }
             >
-              {t("library.backToPlayer")}
+              <span className="now-playing-label">
+                <Text
+                  value={nowPlayingTitle || t("library.backToPlayer")}
+                  marquee
+                />
+              </span>
             </button>
           )}
         </div>

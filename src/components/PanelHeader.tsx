@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useLocale } from "../hooks/useLocale";
 import { Icon } from "./Icon";
+import { Text } from "./Text";
 
 export type HeaderControlId = "content" | "search" | "layout" | "settings" | "nowPlaying";
 
@@ -24,6 +25,7 @@ export const PanelHeader = memo(function PanelHeader({
   on,
   controls,
   searching,
+  nowPlayingTitle,
   onSearch,
   onSettings,
   onToggleGrid,
@@ -33,6 +35,7 @@ export const PanelHeader = memo(function PanelHeader({
   on: HeaderControlId;
   controls: readonly HeaderControlId[];
   searching: boolean;
+  nowPlayingTitle?: string;
   onSearch: () => void;
   onSettings: () => void;
   onToggleGrid?: () => void;
@@ -88,10 +91,19 @@ export const PanelHeader = memo(function PanelHeader({
                 type="button"
                 className={`panel-key panel-key-now-playing ${active && on === control ? "selected" : ""}`}
                 onClick={onResumePlayback}
-                aria-label={t("library.backToPlayer")}
+                aria-label={
+                  nowPlayingTitle
+                    ? `${t("start.nowPlaying")}: ${nowPlayingTitle}`
+                    : t("library.backToPlayer")
+                }
               >
                 <Icon name="play" />
-                <span>{t("library.backToPlayer")}</span>
+                <span className="now-playing-label">
+                  <Text
+                    value={nowPlayingTitle || t("library.backToPlayer")}
+                    marquee
+                  />
+                </span>
               </button>
             );
           }

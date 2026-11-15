@@ -24,6 +24,7 @@ import { PinModal } from "./PinModal";
 import { Poster } from "./Poster";
 import { KeyGuide } from "./KeyGuide";
 import { SearchField } from "./SearchField";
+import { Text } from "./Text";
 
 export interface VodViewProps {
   active?: boolean;
@@ -35,6 +36,7 @@ export interface VodViewProps {
   onToggleLayout?: () => void;
   onSettings?: () => void;
   onResumePlayback?: () => void;
+  nowPlayingTitle?: string;
   onToggleFavourite?: (item: ShapedVodItem) => void;
 }
 
@@ -80,6 +82,7 @@ export const VodView: React.FC<VodViewProps> = ({
   onToggleLayout,
   onSettings,
   onResumePlayback,
+  nowPlayingTitle,
   onToggleFavourite,
 }) => {
   const { t, direction, number, locale } = useLocale();
@@ -547,7 +550,7 @@ export const VodView: React.FC<VodViewProps> = ({
         ["layout", t("library.listView")],
         ["search", t("common.search")],
         ["settings", t("common.settings")],
-        ["nowPlaying", t("library.backToPlayer")],
+        ["nowPlaying", nowPlayingTitle || t("library.backToPlayer")],
       ]
     : [
         ["movie", t("content.movies")],
@@ -750,7 +753,13 @@ export const VodView: React.FC<VodViewProps> = ({
                 activateTool(at);
               }}
             >
-              <span className="vod-tool-label">{label}</span>
+              <span className={`vod-tool-label ${id === "nowPlaying" ? "now-playing-label" : ""}`}>
+                {id === "nowPlaying" ? (
+                  <Text value={label} marquee />
+                ) : (
+                  label
+                )}
+              </span>
             </button>
           ))}
           <KeyGuide

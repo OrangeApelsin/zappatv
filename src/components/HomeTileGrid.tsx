@@ -9,6 +9,7 @@ import type { ChannelGuide } from "../stores/library";
 import type { Channel } from "../types";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
+import { Text } from "./Text";
 
 export const ROWS_VISIBLE = 3;
 export const GROUP_TAB_WIDTH = 168;
@@ -247,6 +248,7 @@ export interface HomeTileGridProps {
   onOpenSearch?: () => void;
   onOpenSettings?: () => void;
   onResumePlayback?: () => void;
+  nowPlayingTitle?: string;
   onClose?: () => void;
   onPrefetchBatchEpg?: (channels: readonly Channel[]) => void;
 }
@@ -277,6 +279,7 @@ export const HomeTileGrid = memo(function HomeTileGrid({
   onOpenSearch,
   onOpenSettings,
   onResumePlayback,
+  nowPlayingTitle,
   onClose,
   onPrefetchBatchEpg,
 }: HomeTileGridProps) {
@@ -637,10 +640,19 @@ export const HomeTileGrid = memo(function HomeTileGrid({
                 activeZone === "header" && activeHeaderControl === "nowPlaying" ? "selected" : ""
               }`}
               onClick={onResumePlayback}
-              aria-label={t("library.backToPlayer")}
+              aria-label={
+                nowPlayingTitle
+                  ? `${t("start.nowPlaying")}: ${nowPlayingTitle}`
+                  : t("library.backToPlayer")
+              }
             >
               <Icon name="play" />
-              <span>{t("library.backToPlayer")}</span>
+              <span className="now-playing-label">
+                <Text
+                  value={nowPlayingTitle || t("library.backToPlayer")}
+                  marquee
+                />
+              </span>
             </button>
           )}
         </div>

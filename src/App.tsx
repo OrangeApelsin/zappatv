@@ -2807,6 +2807,13 @@ export default function App() {
     [activeNowPlaying, headerControls],
   );
 
+  const nowPlayingButtonTitle = useMemo(() => {
+    if (!activeNowPlaying) return undefined;
+    return activeNowPlaying.subtitle
+      ? `${activeNowPlaying.title} · ${activeNowPlaying.subtitle}`
+      : activeNowPlaying.title;
+  }, [activeNowPlaying]);
+
   const triggerDirectSeek = useCallback(
     (dir: -1 | 1) => {
       const existing = directSeekRef.current;
@@ -4581,6 +4588,7 @@ export default function App() {
               onSettings={openSettings}
               onToggleGrid={toggleGridMode}
               onResumePlayback={activeNowPlaying ? resumePlayback : undefined}
+              nowPlayingTitle={nowPlayingButtonTitle}
             />
             <div className="panel-cols">
               <Sidebar
@@ -4850,6 +4858,7 @@ export default function App() {
           }}
           onOpenSettings={openSettings}
           onResumePlayback={activeNowPlaying ? resumePlayback : undefined}
+          nowPlayingTitle={nowPlayingButtonTitle}
           onClose={watch}
           onPrefetchBatchEpg={(slice) => {
             if (
@@ -4884,6 +4893,7 @@ export default function App() {
             onToggleLayout={toggleGridMode}
             onPlayEpisode={handlePlayEpisode}
             onResumePlayback={activeNowPlaying ? resumePlayback : undefined}
+            nowPlayingTitle={nowPlayingButtonTitle}
             onBack={() => setActiveSeries(null)}
           />
         ) : (
@@ -4896,6 +4906,7 @@ export default function App() {
               onToggleLayout={toggleGridMode}
               onSettings={openSettings}
               onResumePlayback={activeNowPlaying ? resumePlayback : undefined}
+              nowPlayingTitle={nowPlayingButtonTitle}
               onToggleFavourite={(item) => {
                 if (activePlaylist)
                   toggleFavourite({
