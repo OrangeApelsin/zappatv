@@ -107,6 +107,52 @@ describe("private TV addresses", () => {
       network: { getIp: () => "192.168.1.99\n" },
     };
     expect(getTvNetworkIp()).toBe("192.168.1.99");
+
+    // 4. Samsung official capitalized getIP()
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: { getIP: () => "192.168.1.55" },
+    };
+    expect(getTvNetworkIp()).toBe("192.168.1.55");
+
+    // 5. Samsung official capitalized getWiFiIP()
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: { getWiFiIP: () => "10.0.1.20" },
+    };
+    expect(getTvNetworkIp()).toBe("10.0.1.20");
+
+    // 6. Samsung official capitalized getEthernetIP()
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: { getEthernetIP: () => "172.16.5.10" },
+    };
+    expect(getTvNetworkIp()).toBe("172.16.5.10");
+  });
+
+  test("resolveTvNetworkIpAsync discovers IP across async systeminfo and WebRTC", async () => {
+    const { resolveTvNetworkIpAsync } = await load();
+
+    // 1. Synchronous match resolves immediately
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: { getIP: () => "192.168.1.77" },
+    };
+    const ip = await resolveTvNetworkIpAsync();
+    expect(ip).toBe("192.168.1.77");
+
+    // 2. Async tizen systeminfo fallback
+    delete (window as unknown as { webapis?: unknown }).webapis;
+    (window as unknown as { tizen: unknown }).tizen = {
+      systeminfo: {
+        getPropertyValue: (
+          prop: string,
+          success: (data: { ipAddress?: string }) => void,
+        ) => {
+          if (prop === "WIFI_NETWORK") {
+            setTimeout(() => success({ ipAddress: "192.168.1.88" }), 10);
+          }
+        },
+      },
+    };
+    const asyncIp = await resolveTvNetworkIpAsync();
+    expect(asyncIp).toBe("192.168.1.88");
   });
 });
 
