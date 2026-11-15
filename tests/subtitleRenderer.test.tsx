@@ -107,4 +107,27 @@ describe("SubtitleRenderer", () => {
     expect(container.textContent).toContain("First line");
     expect(container.textContent).toContain("Third line");
   });
+
+  it("renders with subtitle position classes correctly", () => {
+    const { container, rerender } = render(
+      <div className="subtitle-overlay size-m style-translucent pos-bottom">
+        <SubtitleRenderer text="Testing bottom subtitle" />
+      </div>,
+    );
+    expect(container.firstElementChild?.classList.contains("pos-bottom")).toBe(true);
+
+    rerender(
+      <div className="subtitle-overlay size-m style-translucent pos-lower">
+        <SubtitleRenderer text="Testing lower subtitle" />
+      </div>,
+    );
+    expect(container.firstElementChild?.classList.contains("pos-lower")).toBe(true);
+
+    rerender(
+      <div className="subtitle-overlay size-m style-translucent pos-elevated">
+        <SubtitleRenderer text="Testing elevated subtitle" />
+      </div>,
+    );
+    expect(container.firstElementChild?.classList.contains("pos-elevated")).toBe(true);
+  });
 });
