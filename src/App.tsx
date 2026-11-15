@@ -2131,7 +2131,7 @@ export default function App() {
           kind: selection.kind,
           name: selection.item.name,
           group: categoryName,
-          logo: "logo" in selection.item ? selection.item.logo : "",
+          logo: ("logo" in selection.item && selection.item.logo) ? selection.item.logo : "",
           url,
           ...(progress?.seconds && !selection.restart ? { resumeAt: progress.seconds } : {}),
         };
@@ -4541,6 +4541,13 @@ export default function App() {
           title={nextEpisode.name}
           season={nextEpisode.season}
           episode={nextEpisode.number}
+          seriesTitle={episodeInfo?.seriesTitle}
+          thumbnail={
+            nextEpisode.logo ||
+            (nextEpisode.seriesKey
+              ? library.seriesDetails[nextEpisode.seriesKey]?.value?.logo
+              : undefined)
+          }
           seconds={upNextSeconds}
           onPlayNow={playNextEpisode}
           onCancel={handleUpNextCancel}

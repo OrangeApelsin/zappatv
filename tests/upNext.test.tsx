@@ -47,6 +47,86 @@ test("UpNextPrompt renders next episode details and triggers actions", () => {
   expect(onCancel).toHaveBeenCalledTimes(1);
 });
 
+test("TICKET-2308: Minimalist Up Next card renders #upNextCard, #playNowBtn with SVG circular progress ring, #cancelNextBtn, and handles D-pad focus", () => {
+  const onPlayNow = vi.fn();
+  const onCancel = vi.fn();
+
+  const { container } = render(
+    <UpNextPrompt
+      title="The Final Countdown"
+      season={3}
+      episode={8}
+      thumbnail="http://example.com/ep8.jpg"
+      seconds={10}
+      onPlayNow={onPlayNow}
+      onCancel={onCancel}
+    />,
+  );
+
+  // 1. Structural inspection: #upNextCard, #playNowBtn, #cancelNextBtn
+  const card = container.querySelector("#upNextCard");
+  expect(card).toBeTruthy();
+  expect(card?.getAttribute("role")).toBe("dialog");
+
+  const playBtn = container.querySelector("#playNowBtn") as HTMLButtonElement | null;
+  expect(playBtn).toBeTruthy();
+  expect(playBtn?.querySelector(".up-next-thumb-img")?.getAttribute("src")).toBe("http://example.com/ep8.jpg");
+
+  const scrim = playBtn?.querySelector(".up-next-scrim");
+  expect(scrim).toBeTruthy();
+
+  const svg = scrim?.querySelector("svg.up-next-ring");
+  expect(svg).toBeTruthy();
+  expect(svg?.getAttribute("viewBox")).toBe("0 0 56 56");
+
+  const circles = svg?.querySelectorAll("circle");
+  expect(circles?.length).toBe(2);
+  const [track, progress] = Array.from(circles ?? []);
+  expect(track?.getAttribute("cx")).toBe("28");
+  expect(track?.getAttribute("cy")).toBe("28");
+  expect(track?.getAttribute("r")).toBe("24");
+  expect(progress?.getAttribute("cx")).toBe("28");
+  expect(progress?.getAttribute("r")).toBe("24");
+
+  const secondsSpan = scrim?.querySelector(".up-next-seconds");
+  expect(secondsSpan?.textContent).toBe("10s");
+
+  const eyebrow = card?.querySelector(".up-next-eyebrow");
+  expect(eyebrow?.textContent?.toUpperCase()).toContain("UP NEXT");
+
+  const epMeta = card?.querySelector(".up-next-ep-meta");
+  expect(epMeta?.textContent).toBe("S3 E8");
+
+  const videoTitle = card?.querySelector(".up-next-video-title");
+  expect(videoTitle?.textContent).toBe("The Final Countdown");
+
+  const cancelBtn = container.querySelector("#cancelNextBtn") as HTMLButtonElement | null;
+  expect(cancelBtn).toBeTruthy();
+
+  // 2. D-pad navigation: starts on playBtn, Right moves to cancelBtn, Enter triggers onCancel
+  expect(playBtn?.classList.contains("focused")).toBe(true);
+  expect(cancelBtn?.classList.contains("focused")).toBe(false);
+
+  press(KEY.RIGHT);
+  expect(playBtn?.classList.contains("focused")).toBe(false);
+  expect(cancelBtn?.classList.contains("focused")).toBe(true);
+
+  press(KEY.ENTER);
+  expect(onCancel).toHaveBeenCalledTimes(1);
+  expect(onPlayNow).not.toHaveBeenCalled();
+
+  // Move back left to playBtn and press Enter to trigger onPlayNow
+  press(KEY.LEFT);
+  expect(playBtn?.classList.contains("focused")).toBe(true);
+  press(KEY.ENTER);
+  expect(onPlayNow).toHaveBeenCalledTimes(1);
+
+  // Press Return to cancel
+  press(KEY.BACK);
+  expect(onCancel).toHaveBeenCalledTimes(2);
+});
+
+
 test("UP_NEXT_DURATIONS contains (off, 10s, 15s, 20s, 30s) and getUpNextSeconds maps correctly", () => {
   expect(UP_NEXT_DURATIONS.map((d) => d.id)).toEqual([
     "off",

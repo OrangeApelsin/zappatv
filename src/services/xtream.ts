@@ -62,6 +62,7 @@ export interface XtreamEpisode {
   number: number;
   name: string;
   extension: string;
+  logo?: string;
   durationSeconds?: number;
 }
 
@@ -557,6 +558,7 @@ export async function loadXtreamSeriesDetail(
         seen.add(episodeId);
         const episodeInfo = isRecord(episode.info) ? episode.info : {};
         const duration = durationSeconds(episodeInfo);
+        const epThumb = text(episodeInfo.movie_image) || text(info.cover);
         episodes.push({
           key: itemKey(playlistId, "episode", episodeId),
           episodeId,
@@ -565,6 +567,7 @@ export async function loadXtreamSeriesDetail(
           number: integer(episode.episode_num) ?? 0,
           name: text(episode.title),
           extension: text(episode.container_extension),
+          ...(epThumb ? { logo: address(epThumb, session.streamOrigin) } : {}),
           ...(duration !== undefined ? { durationSeconds: duration } : {}),
         });
       }

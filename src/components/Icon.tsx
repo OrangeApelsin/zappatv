@@ -232,6 +232,12 @@ const paths: Record<string, React.ReactNode> = {
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </>
   ),
+  close: (
+    <>
+      <path d="m18 6-12 12" />
+      <path d="m6 6 12 12" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof paths;

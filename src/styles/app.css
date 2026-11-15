@@ -5190,8 +5190,9 @@ html[dir="rtl"] .pb-pill-badge {
   margin-left: 20px;
 }
 .no-flex-gap .pin-keypad-row > * + *,
-.no-flex-gap .up-next-actions > * + * {
-  margin-left: 12px;
+.no-flex-gap #upNextCard > * + *,
+.no-flex-gap .up-next-prompt > * + * {
+  margin-left: 20px;
 }
 
 /* The switch runs row-reverse, so the space between its two halves is to the right of the
@@ -5229,10 +5230,7 @@ html[dir="rtl"] .pb-pill-badge {
   margin-top: 16px;
 }
 .no-flex-gap .pin-keypad > * + *,
-.no-flex-gap .up-next-prompt > * + * {
-  margin-top: 12px;
-}
-.no-flex-gap .up-next-title > * + * {
+.no-flex-gap .up-next-meta > * + * {
   margin-top: 4px;
 }
 .no-flex-gap .screensaver-drift > * + * {
@@ -5632,7 +5630,8 @@ html[dir="rtl"].no-flex-gap .parental-actions-row > * + *,
 html[dir="rtl"].no-flex-gap .pin-setup-row > * + * { margin-left: 0; margin-right: 16px; }
 html[dir="rtl"].no-flex-gap .pin-slots > * + * { margin-left: 0; margin-right: 20px; }
 html[dir="rtl"].no-flex-gap .pin-keypad-row > * + *,
-html[dir="rtl"].no-flex-gap .up-next-actions > * + * { margin-left: 0; margin-right: 12px; }
+html[dir="rtl"].no-flex-gap #upNextCard > * + *,
+html[dir="rtl"].no-flex-gap .up-next-prompt > * + * { margin-left: 0; margin-right: 20px; }
 
 /* =================================================== AssisTV Home Tile Grid ==== */
 .home-view {
@@ -6963,82 +6962,172 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
   }
 }
 
-/* ---- Up Next Episode Countdown (TICKET-2187) --------------------------- */
-.up-next-prompt {
-  position: absolute;
-  bottom: 48px;
-  right: 56px;
-  width: 440px;
-  padding: 20px 24px;
-  background: rgba(10, 20, 28, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 200, 220, 0.35);
-  border-radius: var(--r-lg);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+/* ---- Minimalist Up Next Episode Corner Card (TICKET-2308) ------------- */
+#upNextCard.up-next-prompt {
+  position: fixed;
+  bottom: 64px;
+  right: 72px;
+  width: 480px;
+  padding: 16px;
+  background: rgba(13, 17, 23, 0.96);
+  border: 1px solid var(--line, rgba(240, 246, 252, 0.12));
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  z-index: var(--z-popup);
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  z-index: 9999;
+  transform: translate3d(0, 0, 0);
+  box-sizing: border-box;
   animation: up-next-enter 0.3s ease-out;
 }
 
 @keyframes up-next-enter {
   from {
-    transform: translateY(24px);
+    transform: translate3d(0, 24px, 0);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
     opacity: 1;
   }
 }
 
-.up-next-header {
+#upNextCard #playNowBtn {
+  width: 168px;
+  height: 94px;
+  min-width: 168px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  border: 2px solid transparent;
+  background: #000000;
+  outline: none;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+#upNextCard #playNowBtn:focus,
+#upNextCard #playNowBtn.focused {
+  border-color: var(--focus, #388bfd);
+  transform: scale(1.04);
+  box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.45);
+}
+
+.up-next-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.up-next-thumb-fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #161b22, #0d1117);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  color: var(--text-2, #8b949e);
 }
 
-.up-next-badge {
-  font-size: 15px;
+.up-next-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.up-next-ring {
+  transform: rotate(-90deg);
+}
+
+.up-next-track {
+  stroke: var(--line, rgba(255, 255, 255, 0.2));
+}
+
+.up-next-progress {
+  stroke: var(--focus, #388bfd);
+}
+
+.up-next-seconds {
+  position: absolute;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--accent, #00d2ff);
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #ffffff);
+  pointer-events: none;
 }
 
-.up-next-title {
+.up-next-meta {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  text-align: left;
+}
+
+.up-next-eyebrow {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2, #8b949e);
+  margin-bottom: 2px;
 }
 
 .up-next-ep-meta {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--accent, #58a6ff);
+  margin-bottom: 2px;
 }
 
-.up-next-ep-name {
+.up-next-video-title {
   font-size: 20px;
-  font-weight: 700;
-  color: #ffffff;
-  white-space: nowrap;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text, #f0f6fc);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.up-next-actions {
+#upNextCard #cancelNextBtn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 8px;
+  align-self: flex-start;
+  margin-left: auto;
   display: flex;
-  gap: 12px;
-  margin-top: 4px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.15));
+  color: var(--text-2, #8b949e);
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
-.up-next-actions button {
-  flex: 1;
-  font-size: 16px;
-  padding: 10px 16px;
+#upNextCard #cancelNextBtn:focus,
+#upNextCard #cancelNextBtn.focused {
+  border-color: var(--focus, #388bfd);
+  color: var(--text, #ffffff);
+  background: rgba(56, 139, 253, 0.15);
+  transform: scale(1.04);
+  box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.45);
 }
 
 /* ---- Parental PIN Modal & Controls (TICKET-2189) ----------------------- */
