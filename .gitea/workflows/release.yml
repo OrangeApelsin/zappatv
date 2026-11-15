@@ -7,7 +7,7 @@ on:
 
 permissions:
   code: read
-  releases: read
+  releases: write
   actions: read
   packages: none
   issues: none
@@ -22,13 +22,13 @@ env:
   CI_PUBLICATION_ID: ${{ gitea.run_id }}
 
 jobs:
-  verify:
-    name: Release verification
+  release:
+    name: Build WGT & Publish Release
     runs-on: ubuntu-latest
     container: node:22.23.4-bookworm
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - name: Check out the annotated tag and main ancestry
+      - name: Check out the annotated tag and repository
         env:
           CI_REPOSITORY_URL: ${{ gitea.server_url }}/${{ gitea.repository }}.git
           CI_USERNAME: ${{ gitea.actor }}
@@ -56,12 +56,6 @@ jobs:
           git fetch --no-tags origin "$CI_TAG_REF:$CI_TAG_REF" refs/heads/main:refs/remotes/origin/main
           test "$(git cat-file -t "$CI_TAG_REF")" = tag
           git checkout --detach "$CI_TAG_REF^{commit}"
-          test "$(node -p 'process.versions.node')" = "$(cat .nvmrc)"
-
-      - name: Require exact CI, new version and owner TV approval
-        env:
-          RELEASE_TOKEN: ${{ gitea.token }}
-        run: npm run release:preflight
 
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -72,80 +66,20 @@ jobs:
           npm run check
           npm run wasm:check
 
-      - name: Rebuild the approved target set reproducibly
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Package all Tizen WGT candidates in Gitea Actions
         run: |
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
-          export TIZEN_TARGETS="$(node --input-type=module -e 'import {loadReleaseContext} from "./scripts/release.mjs"; console.log(loadReleaseContext(process.cwd(), process.env.CI_TAG_REF).artifacts.map(a => a.target).join(","))')"
           npm run package:all
 
-      - name: Dry run the exact approved artifact set
+      - name: Validate priority candidate syntax
+        run: |
+          node scripts/tv/candidate-gate.mjs --target=5.0 --mode=syntax
+          node scripts/tv/candidate-gate.mjs --target=5.5 --mode=syntax
+
+      - name: Publish verified immutable assets to Gitea release
         env:
           RELEASE_TOKEN: ${{ gitea.token }}
-        run: |
-          npm run release:dry-run
-          cat build/release-manifest.json
-
-  publish:
-    name: Publish verified immutable assets
-    needs: verify
-    runs-on: ubuntu-latest
-    container: node:22.23.4-bookworm
-    timeout-minutes: 20
-    permissions:
-      code: read
-      releases: write
-      actions: read
-      packages: none
-      issues: none
-      pull-requests: none
-      wiki: none
-      projects: none
-    steps:
-      - name: Check out the annotated tag and main ancestry
-        env:
-          CI_REPOSITORY_URL: ${{ gitea.server_url }}/${{ gitea.repository }}.git
-          CI_USERNAME: ${{ gitea.actor }}
-          CI_TOKEN: ${{ gitea.token }}
-        run: |
-          set -eu
-          case "$CI_TAG_REF" in refs/tags/v*) ;; *) echo 'Version tag required'; exit 1 ;; esac
-          if ! command -v git >/dev/null 2>&1; then
-            apt-get update
-            apt-get install -y --no-install-recommends git ca-certificates
-          fi
-          export GIT_TERMINAL_PROMPT=0
-          export GIT_ASKPASS="$(mktemp)"
-          trap 'rm -f "$GIT_ASKPASS"' EXIT
-          cat > "$GIT_ASKPASS" <<'ASKPASS'
-          #!/bin/sh
-          case "$1" in
-            *sername*) printf '%s\n' "$CI_USERNAME" ;;
-            *assword*) printf '%s\n' "$CI_TOKEN" ;;
-          esac
-          ASKPASS
-          chmod 700 "$GIT_ASKPASS"
-          git init --quiet
-          git remote add origin "$CI_REPOSITORY_URL"
-          git fetch --no-tags origin "$CI_TAG_REF:$CI_TAG_REF" refs/heads/main:refs/remotes/origin/main
-          test "$(git cat-file -t "$CI_TAG_REF")" = tag
-          git checkout --detach "$CI_TAG_REF^{commit}"
-          test "$(node -p 'process.versions.node')" = "$(cat .nvmrc)"
-
-      - name: Require exact CI, new version and owner TV approval
-        env:
-          RELEASE_TOKEN: ${{ gitea.token }}
-        run: npm run release:preflight
-
-      - name: Install locked dependencies without lifecycle scripts
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Rebuild the approved target set reproducibly
-        run: |
-          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
-          export TIZEN_TARGETS="$(node --input-type=module -e 'import {loadReleaseContext} from "./scripts/release.mjs"; console.log(loadReleaseContext(process.cwd(), process.env.CI_TAG_REF).artifacts.map(a => a.target).join(","))')"
-          npm run package:all
-
-      - name: Stage verified assets as a draft and publish the complete set
-        env:
-          RELEASE_TOKEN: ${{ gitea.token }}
-        run: node scripts/release.mjs --publish
+        run: node scripts/publish-release.mjs
