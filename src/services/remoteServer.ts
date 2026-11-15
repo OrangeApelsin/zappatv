@@ -127,8 +127,10 @@ export function isPrivateIPv4(value: string): boolean {
   );
 }
 
-export function getTvNetworkIp(): string {
-  if (typeof window === "undefined") return "";
+export function getTvNetworkInfo(): { address: string; isPublic: boolean } {
+  if (typeof window === "undefined") return { address: "", isPublic: false };
+
+  let foundPublic = false;
 
   // 1. Check window.webapis.network (Wi-Fi or Ethernet on Samsung Tizen)
   try {
@@ -155,8 +157,11 @@ export function getTvNetworkIp(): string {
       }
 
       for (const candidate of candidates) {
-        if (candidate && isPrivateIPv4(candidate)) {
-          return candidate;
+        if (isPrivateIPv4(candidate)) {
+          return { address: candidate, isPublic: false };
+        }
+        if (/^\d+\.\d+\.\d+\.\d+$/.test(candidate) && !candidate.startsWith("127.")) {
+          foundPublic = true;
         }
       }
     }
@@ -175,7 +180,12 @@ export function getTvNetworkIp(): string {
         try {
           const val = sys.getPropertyValueSync(prop) as Record<string, unknown> | undefined;
           const ip = String(val?.ipAddress ?? val?.ip ?? "").trim();
-          if (ip && isPrivateIPv4(ip)) return ip;
+          if (ip) {
+            if (isPrivateIPv4(ip)) return { address: ip, isPublic: false };
+            if (/^\d+\.\d+\.\d+\.\d+$/.test(ip) && !ip.startsWith("127.")) {
+              foundPublic = true;
+            }
+          }
         } catch {}
       }
     }
@@ -186,12 +196,16 @@ export function getTvNetworkIp(): string {
   // 3. Fallback to location hostname if running in local browser/dev network
   try {
     const host = window.location?.hostname?.trim();
-    if (host && isPrivateIPv4(host)) return host;
+    if (host && isPrivateIPv4(host)) return { address: host, isPublic: false };
   } catch {
     /* ignore */
   }
 
-  return "";
+  return { address: "", isPublic: foundPublic };
+}
+
+export function getTvNetworkIp(): string {
+  return getTvNetworkInfo().address;
 }
 
 export function resolveTvNetworkIpAsync(): Promise<string> {
@@ -574,9 +588,13 @@ export function startRemoteAccess(): void {
     });
     return;
   }
-  const syncAddress = getTvNetworkIp();
-  if (isPrivateIPv4(syncAddress)) {
-    launchWorker(syncAddress);
+  const info = getTvNetworkInfo();
+  if (info.isPublic) {
+    publish({ status: "unavailable", address: "", port: 0, error: "no private TV address" });
+    return;
+  }
+  if (info.address && isPrivateIPv4(info.address)) {
+    launchWorker(info.address);
     return;
   }
 
