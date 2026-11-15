@@ -259,8 +259,7 @@ function headFrom(text: string | null): CatalogHead | null {
           typeof group.name !== "string" ||
           !Number.isInteger(group.count) ||
           group.count < 0,
-      ) ||
-      head.groups.reduce((sum, group) => sum + group.count, 0) !== head.count
+      )
     )
       return null;
     return head;
@@ -361,8 +360,7 @@ async function saveGeneration(
   }
   if (
     count !== input.count ||
-    pieces.length !== Math.ceil(count / 1000) ||
-    input.groups.reduce((sum, group) => sum + group.count, 0) !== count
+    pieces.length !== Math.ceil(count / 1000)
   )
     throw new Error("Invalid catalog count");
   if (pieces.reduce((sum, piece) => sum + piece.length * 2, 0) > HANDOFF_LIMIT_BYTES)

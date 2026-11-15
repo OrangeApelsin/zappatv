@@ -381,6 +381,29 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     if (!playlist || get().catalogs[kind] || get().categories[kind].state === "loaded") return;
     const owned = generation;
     return deduplicate(`home-categories:${kind}`, async () => {
+      const scope = sourceIdentity(playlist);
+      const workerKind = kind === "movie" ? "vod" : "series";
+      const localHead = await vodPrefetch.getHead(scope, workerKind);
+      if (owned !== generation) return;
+      if (localHead?.groups?.length) {
+        const items = localHead.groups.map((group) => ({
+          key: `${kind}:${group.id}`,
+          id: group.id,
+          kind,
+          name: group.name,
+          count: group.count,
+        }));
+        set({
+          categories: {
+            ...get().categories,
+            [kind]: { state: "loaded", items },
+          },
+          ...(kind === "movie"
+            ? { vodGroups: localHead.groups }
+            : { seriesGroups: localHead.groups }),
+        });
+        return;
+      }
       const controller = new AbortController();
       controllers.add(controller);
       const held = get().categories[kind];
@@ -543,6 +566,24 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         if (owned !== generation || controller.signal.aborted) return;
         timing.phase("cacheRead");
         timing.record.mode = total < 0 ? "network" : "disk";
+        if (total >= 0 && localHead?.groups?.length) {
+          const cachedCategories = localHead.groups.map((group) => ({
+            key: `${kind}:${group.id}`,
+            id: group.id,
+            kind,
+            name: group.name,
+            count: group.count,
+          }));
+          set({
+            categories: {
+              ...get().categories,
+              [kind]: { state: "loaded", items: cachedCategories },
+            },
+            ...(kind === "movie"
+              ? { vodGroups: localHead.groups }
+              : { seriesGroups: localHead.groups }),
+          });
+        }
         if (total < 0) {
           report("connect");
           const session = await sessionFor(playlist);
@@ -708,7 +749,7 @@ export const useLibrary = create<LibraryState>((set, get) => ({
         timing.record.count = items.length;
         timing.publish("ready");
 
-        if (checkVersion && !forceRefresh && total > 0 && shouldCheckVersion(playlist.id, kind)) {
+        if (checkVersion && !forceRefresh && total >= 0 && shouldCheckVersion(playlist.id, kind)) {
           void (async () => {
             try {
               const probe = await probeVodVersion(playlist, kind, localHead);

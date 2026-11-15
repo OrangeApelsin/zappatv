@@ -238,4 +238,75 @@ describe("VOD Store Progressive Ingestion & State Machine", () => {
     expect(useLibrary.getState().catalogProgress.movie.state).toBe("idle");
     expect(useLibrary.getState().catalogs.movie).toBeUndefined();
   });
+
+  it("loadHomeCategories hydrates cache-first from localHead without HTTP requests", async () => {
+    useLibrary.getState().selectPlaylist(TEST_PLAYLIST);
+    const mockHead = {
+      schema: 2 as const,
+      generation: "gen-cached",
+      t: Date.now(),
+      count: 42,
+      n: 1,
+      groups: [
+        { id: "10", name: "Action Hits", count: 20 },
+        { id: "20", name: "Sci-Fi", count: 22 },
+      ],
+    };
+    vi.spyOn(vodPrefetch, "getHead").mockResolvedValue(mockHead);
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await useLibrary.getState().loadHomeCategories("movie");
+
+    const state = useLibrary.getState();
+    expect(state.categories.movie.state).toBe("loaded");
+    expect(state.categories.movie.items.length).toBe(2);
+    expect(state.categories.movie.items[0]).toEqual({
+      key: "movie:10",
+      id: "10",
+      kind: "movie",
+      name: "Action Hits",
+      count: 20,
+    });
+    expect(state.vodGroups.length).toBe(2);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("loadVodCatalog hydrates categories immediately from localHead before streaming items", async () => {
+    useLibrary.getState().selectPlaylist(TEST_PLAYLIST);
+    const mockHead = {
+      schema: 2 as const,
+      generation: "gen-vod",
+      t: Date.now(),
+      count: 1,
+      n: 1,
+      groups: [{ id: "5", name: "Drama", count: 1 }],
+    };
+    vi.spyOn(vodPrefetch, "getHead").mockResolvedValue(mockHead);
+    const fetchSpy = vi.spyOn(vodPrefetch, "fetch");
+    vi.spyOn(vodPrefetch, "take").mockImplementation(async (_pid, _kind, _ttl, onChunk) => {
+      // At this point, categories should already be loaded
+      expect(useLibrary.getState().categories.movie.state).toBe("loaded");
+      expect(useLibrary.getState().categories.movie.items[0].name).toBe("Drama");
+      const item = {
+        kind: "movie" as const,
+        name: "Succession Movie",
+        skey: "succession movie",
+        key: "v501",
+        streamId: "501",
+        logo: "",
+        group: "Drama",
+        categoryId: "5",
+        num: 1,
+        rating: "9.0",
+      };
+      onChunk?.([item], mockHead.groups, true);
+      return { items: [item], groups: mockHead.groups };
+    });
+
+    await useLibrary.getState().loadVodCatalog("movie");
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(useLibrary.getState().categories.movie.state).toBe("loaded");
+    expect(useLibrary.getState().vodItems.length).toBe(1);
+  });
 });
