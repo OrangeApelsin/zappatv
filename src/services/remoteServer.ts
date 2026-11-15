@@ -110,7 +110,9 @@ function validJsonPost(request: RemoteRequest): boolean {
 }
 
 export function isPrivateIPv4(value: string): boolean {
-  const parts = value.split(".");
+  if (!value || typeof value !== "string") return false;
+  const clean = value.trim();
+  const parts = clean.split(".");
   if (parts.length !== 4) return false;
   const bytes = parts.map(Number);
   if (bytes.some((byte, index) => !/^\d+$/.test(parts[index]) || byte < 0 || byte > 255)) {
@@ -119,8 +121,80 @@ export function isPrivateIPv4(value: string): boolean {
   return (
     bytes[0] === 10 ||
     (bytes[0] === 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
-    (bytes[0] === 192 && bytes[1] === 168)
+    (bytes[0] === 192 && bytes[1] === 168) ||
+    (bytes[0] === 100 && bytes[1] >= 64 && bytes[1] <= 127) || // RFC 6598 CGNAT
+    (bytes[0] === 169 && bytes[1] === 254) // RFC 3927 Link-local
   );
+}
+
+export function getTvNetworkIp(): string {
+  if (typeof window === "undefined") return "";
+
+  // 1. Check window.webapis.network (Wi-Fi or Ethernet on Samsung Tizen)
+  try {
+    const net = window.webapis?.network as Record<string, unknown> | undefined;
+    if (net) {
+      const candidates: string[] = [];
+
+      if (typeof net.getIp === "function") {
+        try {
+          const ip = String(net.getIp() ?? "").trim();
+          if (ip) candidates.push(ip);
+        } catch {}
+      }
+
+      if (typeof net.getWiFiIp === "function") {
+        try {
+          const ip = String(net.getWiFiIp() ?? "").trim();
+          if (ip) candidates.push(ip);
+        } catch {}
+      }
+
+      if (typeof (net as Record<string, () => string>).getEthernetIp === "function") {
+        try {
+          const ip = String((net as Record<string, () => string>).getEthernetIp() ?? "").trim();
+          if (ip) candidates.push(ip);
+        } catch {}
+      }
+
+      for (const candidate of candidates) {
+        if (candidate && isPrivateIPv4(candidate)) {
+          return candidate;
+        }
+      }
+    }
+  } catch {
+    /* webapis call failed */
+  }
+
+  // 2. Check Tizen systeminfo if available
+  try {
+    const tizenObj = (window as unknown as Record<string, unknown>).tizen as
+      | Record<string, unknown>
+      | undefined;
+    const sys = tizenObj?.systeminfo as Record<string, unknown> | undefined;
+    if (sys && typeof sys.getPropertyValueSync === "function") {
+      for (const prop of ["ETHERNET_NETWORK", "WIFI_NETWORK", "NETWORK"]) {
+        try {
+          const val = sys.getPropertyValueSync(prop) as Record<string, unknown> | undefined;
+          const ip = String(val?.ipAddress ?? val?.ip ?? "").trim();
+          if (ip && isPrivateIPv4(ip)) return ip;
+        } catch {}
+      }
+    }
+  } catch {
+    /* systeminfo call failed */
+  }
+
+  // 3. Fallback to location hostname if running in local browser/dev network
+  try {
+    const host = window.location?.hostname?.trim();
+    if (host && isPrivateIPv4(host)) return host;
+  } catch {
+    /* ignore */
+  }
+
+  return "";
 }
 
 export function remoteAccessState(): RemoteAccessState {
@@ -388,7 +462,7 @@ export function startRemoteAccess(): void {
     });
     return;
   }
-  const address = window.webapis?.network?.getIp?.() ?? "";
+  const address = getTvNetworkIp();
   if (!isPrivateIPv4(address)) {
     publish({ status: "unavailable", address: "", port: 0, error: "no private TV address" });
     return;

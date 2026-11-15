@@ -73,10 +73,40 @@ describe("private TV addresses", () => {
     expect(isPrivateIPv4("172.16.0.1")).toBe(true);
     expect(isPrivateIPv4("172.31.255.254")).toBe(true);
     expect(isPrivateIPv4("192.168.1.20")).toBe(true);
+    expect(isPrivateIPv4("100.64.0.1")).toBe(true);
+    expect(isPrivateIPv4("169.254.1.2")).toBe(true);
+    expect(isPrivateIPv4(" 192.168.1.20 ")).toBe(true);
     expect(isPrivateIPv4("127.0.0.1")).toBe(false);
     expect(isPrivateIPv4("172.32.0.1")).toBe(false);
     expect(isPrivateIPv4("8.8.8.8")).toBe(false);
     expect(isPrivateIPv4("not-an-address")).toBe(false);
+  });
+
+  test("getTvNetworkIp resolves across Wi-Fi, Ethernet, and whitespace edge cases", async () => {
+    const { getTvNetworkIp } = await load();
+
+    // 1. Wi-Fi fallback when getIp is empty
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: { getIp: () => "", getWiFiIp: () => "192.168.1.45" },
+    };
+    expect(getTvNetworkIp()).toBe("192.168.1.45");
+
+    // 2. Ethernet fallback when getIp throws or is empty
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: {
+        getIp: () => {
+          throw new Error("No primary route");
+        },
+        getEthernetIp: () => " 10.0.0.12 ",
+      },
+    };
+    expect(getTvNetworkIp()).toBe("10.0.0.12");
+
+    // 3. Normal getIp with whitespace
+    (window as unknown as { webapis: unknown }).webapis = {
+      network: { getIp: () => "192.168.1.99\n" },
+    };
+    expect(getTvNetworkIp()).toBe("192.168.1.99");
   });
 });
 
