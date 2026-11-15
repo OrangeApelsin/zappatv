@@ -278,6 +278,7 @@ export function StartPage({
         <button
           type="button"
           className={`home-btn btn-search ${focus === "search" ? "focused" : ""}`}
+          aria-label={t("start.search")}
           onClick={() => {
             setFocus("search");
             onSelectSearch();
@@ -293,6 +294,7 @@ export function StartPage({
         <button
           type="button"
           className={`home-btn btn-settings ${focus === "settings" ? "focused" : ""}`}
+          aria-label={t("start.settings")}
           onClick={() => {
             setFocus("settings");
             onSelectSettings();

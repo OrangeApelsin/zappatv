@@ -29,7 +29,7 @@ import { connect, findChrome } from "./tv/cdp.mjs";
 import { driver } from "./tv/harness.mjs";
 import { SEED, host } from "./present.mjs";
 
-const OUT = "docs/screenshots";
+const OUT = "screenshots";
 const PORT = 4600; // not store-assets' 4599, so both can run at once
 const CHROME_PORT = 9334;
 const WIDTH = 1920;
@@ -94,6 +94,7 @@ if (!chrome) {
 }
 
 mkdirSync(OUT, { recursive: true });
+mkdirSync("docs/screenshots", { recursive: true });
 const server = await host("dist", PORT);
 
 const browser = spawn(
@@ -164,6 +165,11 @@ async function shoot(name, expect, width = WIDTH, height = HEIGHT) {
   const { data } = await cdp.send("Page.captureScreenshot", { format: "png" });
   const bytes = Buffer.from(data, "base64");
   writeFileSync(`${OUT}/${name}.png`, bytes);
+  try {
+    writeFileSync(`docs/screenshots/${name}.png`, bytes);
+  } catch {
+    /* docs/screenshots optional */
+  }
   console.log(`  ${name}.png  ${width}x${height}  ${Math.round(bytes.length / 1024)}KB`);
 }
 
@@ -191,27 +197,32 @@ console.log(`\nTen screenshots, from the built application on port ${PORT}:`);
  * was missing, which was true and had nothing to do with the code that had just been changed.
  */
 try {
-  // 1. What a viewer sees on a television before the seed exists, including local Remote access.
-  const { identifier: onboardingShim } = await cdp.send(
-    "Page.addScriptToEvaluateOnNewDocument",
-    {
-      source: TV_REMOTE_SHIM,
-    },
-  );
+  // Navigate and seed the playlist
   await cdp.send("Page.navigate", { url: `http://127.0.0.1:${PORT}/` });
   await sleep(2000);
-  await shoot("01-first-run", "playlist");
-  await cdp.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: onboardingShim });
-
-  // From here on, a playlist exists.
   await app.evaluate(SEED);
   await cdp.send("Page.reload");
-  await sleep(5000);
+  await sleep(3500);
 
-  // 2. The channel list, which is the screen the application opens on and the one used most.
+  // 1. Start Page & Hero Hub
+  await shoot("01-first-run", "Live TV");
+
+  // 2. Adaptive Channel Tile Grid
+  await app.evaluate(`(() => {
+    localStorage.setItem("zappa.viewMode", "grid");
+    document.querySelector(".tile-tv")?.click();
+  })()`);
+  await sleep(2000);
   await shoot("02-channels", "News One");
 
-  // 3. The categories the playlist declared, which is the rail rather than a claim in the README.
+  // 3. Side-by-side Channel & EPG schedule panel
+  await app.evaluate(`(() => {
+    localStorage.setItem("zappa.viewMode", "panel");
+  })()`);
+  await cdp.send("Page.reload");
+  await sleep(3000);
+  await app.evaluate(`document.querySelector(".tile-tv")?.click()`);
+  await sleep(2000);
   await app.press("ArrowLeft", 37);
   await app.press("ArrowDown", 40);
   await shoot("03-categories", "Sport");
@@ -255,14 +266,27 @@ try {
   await cdp.send("Page.reload");
   await sleep(2600);
   await keyed("Settings");
-  await sleep(500);
-  if (!(await app.clickText("Playback"))) {
+  await sleep(1000);
+  const openedPlayback = await app.evaluate(`(() => {
+    const btn = [...document.querySelectorAll("button")]
+      .find((e) => e.textContent.includes("Playback"));
+    if (btn) { btn.click(); return true; }
+    return false;
+  })()`);
+  if (!openedPlayback) {
     throw new Error("No Playback section in Settings, so the section it moved to is unknown.");
   }
-  await shoot("06-settings", "Compatibility mode");
+  await sleep(600);
+  await shoot("06-settings", "Screen fit");
 
   // 7. Category management, where every playlist owns its own visibility and search controls.
-  if (!(await app.clickText("Playlists"))) {
+  const openedPlaylists = await app.evaluate(`(() => {
+    const btn = [...document.querySelectorAll("button")]
+      .find((e) => e.textContent.includes("Playlists"));
+    if (btn) { btn.click(); return true; }
+    return false;
+  })()`);
+  if (!openedPlaylists) {
     throw new Error(
       "No Playlists section in Settings, so category management cannot be shown.",
     );
@@ -310,7 +334,7 @@ try {
     revision: 4,
     locale: "en",
     direction: "ltr",
-    labels: { aboutVersion: "Version 1.9.0" },
+    labels: { aboutVersion: "Version 1.0" },
     localeOptions: [{ id: "en", label: "English" }],
     settings: {
       locale: "en",
@@ -343,7 +367,7 @@ try {
     devices: [
       { id: "readme-device", name: "Living room phone", createdAt: 1, lastUsedAt: Date.now() },
     ],
-    about: { version: "1.9.0", repository: "https://github.com/example/zappa2" },
+    about: { version: "1.0", repository: "https://git.halvmj.uk/dany/zappatv" },
     operation: { loading: false, error: "", errorKey: "", errorDetail: "" },
   };
   cdp.on("Fetch.requestPaused", ({ requestId }) => {

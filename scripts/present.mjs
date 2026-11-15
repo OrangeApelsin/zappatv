@@ -58,6 +58,7 @@ http://example.invalid/14.m3u8
 /** The same shape the harness seeds, with the panel left open long enough to photograph. */
 export const SEED = `(() => {
   localStorage.setItem("openiptv.settings", JSON.stringify({
+    locale: "en",
     playlists: [{ id: "pl-1", name: "Example", url: "/store-playlist.m3u" }],
     activePlaylistId: "pl-1", resumeLast: false, panelTimeout: 0, showClock: true,
   }));
