@@ -124,6 +124,21 @@ test("device setup reports connected and unavailable states", () => {
   );
   expect(screen.getByRole("alert").textContent).toContain("Remote setup is unavailable");
   expect(screen.queryByText(/enter the playlist on the left/i)).toBeNull();
+
+  const onRetry = vi.fn();
+  view.rerender(
+    <RemoteSetup
+      remoteAccess={state({
+        status: "unavailable",
+        pairing: null,
+        error: "no private TV address",
+      })}
+      onRetry={onRetry}
+    />,
+  );
+  const retryBtn = screen.getByRole("button", { name: "Try again" });
+  fireEvent.click(retryBtn);
+  expect(onRetry).toHaveBeenCalledTimes(1);
 });
 
 test("Remote access exposes one correct action for each server state", () => {

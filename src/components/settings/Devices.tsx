@@ -77,6 +77,7 @@ export function Devices({
         <RemoteSetup
           remoteAccess={remoteAccess}
           headingLevel={4}
+          onRetry={remoteAccess.retry}
           onCancelPairing={
             remoteAccess.pairing ? () => remoteAccess.cancelPairing() : undefined
           }

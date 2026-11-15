@@ -83,6 +83,8 @@ test("config.xml contains required Zappa TV widget metadata and privileges", () 
 
   // Hardware AVPlay and input privileges
   assert.match(xml, /privilege\/internet/);
+  assert.match(xml, /privilege\/network\b/);
+  assert.match(xml, /privilege\/systeminfo/);
   assert.match(xml, /privilege\/network\.public/);
   assert.match(xml, /privilege\/avplay/);
   assert.match(xml, /privilege\/tv\.inputdevice/);

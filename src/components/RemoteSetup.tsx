@@ -8,6 +8,7 @@ export interface RemoteSetupProps {
   remoteAccess: RemoteAccessState;
   onOpenPairing?: () => PairingSessionView | null;
   onCancelPairing?: () => void;
+  onRetry?: () => void;
   manualFallback?: boolean;
   headingLevel?: 2 | 4;
 }
@@ -16,6 +17,7 @@ export function RemoteSetup({
   remoteAccess,
   onOpenPairing,
   onCancelPairing,
+  onRetry,
   manualFallback = false,
   headingLevel = 2,
 }: RemoteSetupProps) {
@@ -93,6 +95,15 @@ export function RemoteSetup({
         </p>
         {failed && onOpenPairing && (
           <button type="button" className="btn tonal" onClick={onOpenPairing}>
+            {t("remote.retry")}
+          </button>
+        )}
+        {unavailable && (onRetry || onOpenPairing) && (
+          <button
+            type="button"
+            className="btn tonal"
+            onClick={onRetry ?? (() => onOpenPairing?.())}
+          >
             {t("remote.retry")}
           </button>
         )}
