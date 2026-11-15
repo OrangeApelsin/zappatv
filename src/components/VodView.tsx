@@ -194,37 +194,35 @@ export const VodView: React.FC<VodViewProps> = ({
     if (!activeProgress.length) return new Set<string>();
 
     const progressKeys = new Set(activeProgress.map((p) => p.itemKey));
-    const streamIdSet = new Set<string>();
+    const idSet = new Set<string>();
     for (const p of activeProgress) {
       const colon = p.itemKey.lastIndexOf(":");
-      const rawId = colon >= 0 ? p.itemKey.slice(colon + 1) : p.itemKey;
-      if (rawId) streamIdSet.add(rawId);
+      const raw = colon >= 0 ? p.itemKey.slice(colon + 1) : p.itemKey;
+      if (raw) {
+        idSet.add(raw);
+        if (raw.startsWith("v") || raw.startsWith("s")) {
+          idSet.add(raw.slice(1));
+        }
+      }
     }
 
     const set = new Set<string>();
-    const owner = catalogs[kind];
-    if (owner) {
-      for (const pKey of progressKeys) {
-        if (owner.byKey.has(pKey)) set.add(pKey);
-      }
-      for (const id of streamIdSet) {
-        const key = kind === "movie" ? `v${id}` : `s${id}`;
-        if (owner.byKey.has(key)) set.add(key);
-      }
-      if (kind === "series") {
-        for (const [sKey, detail] of Object.entries(seriesDetails)) {
-          if (detail?.value?.episodes?.some((ep) => progressKeys.has(ep.key))) {
-            set.add(sKey);
-          }
+    const items = catalogs[kind]?.items ?? rawItems;
+    for (const item of items) {
+      if (progressKeys.has(item.key)) {
+        set.add(item.key);
+      } else if (kind === "movie") {
+        if (item.streamId && (idSet.has(item.streamId) || idSet.has(`v${item.streamId}`))) {
+          set.add(item.key);
         }
-      }
-    } else {
-      for (const item of rawItems) {
-        if (progressKeys.has(item.key)) {
+      } else {
+        if (item.seriesId && (idSet.has(item.seriesId) || idSet.has(`s${item.seriesId}`))) {
           set.add(item.key);
-        } else if (item.streamId && streamIdSet.has(item.streamId)) {
-          set.add(item.key);
-        } else if (item.seriesId && streamIdSet.has(item.seriesId)) {
+        } else if (
+          seriesDetails[item.key]?.value?.episodes?.some(
+            (ep) => progressKeys.has(ep.key) || (ep.episodeId && idSet.has(ep.episodeId)),
+          )
+        ) {
           set.add(item.key);
         }
       }

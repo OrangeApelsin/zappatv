@@ -558,7 +558,7 @@ export async function loadXtreamSeriesDetail(
         seen.add(episodeId);
         const episodeInfo = isRecord(episode.info) ? episode.info : {};
         const duration = durationSeconds(episodeInfo);
-        const epThumb = text(episodeInfo.movie_image) || text(info.cover);
+        const epThumb = text(episodeInfo.movie_image);
         episodes.push({
           key: itemKey(playlistId, "episode", episodeId),
           episodeId,
