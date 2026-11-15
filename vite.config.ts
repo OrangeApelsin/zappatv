@@ -49,6 +49,11 @@ function tizenClassicScript(): Plugin {
         .replace(/\s+crossorigin(?:="[^"]*")?/gi, "")
         .replace(/<link\s+rel="modulepreload"[^>]*>/gi, "");
 
+      transformed = transformed.replace(
+        "</head>",
+        '  <script src="$WEBAPIS/webapis/webapis.js"></script>\n  </head>',
+      );
+
       if (currentConfig.injectCssVars) {
         transformed = transformed.replace(
           "</head>",
