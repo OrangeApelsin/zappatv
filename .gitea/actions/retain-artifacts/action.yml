@@ -1,0 +1,13 @@
+name: Retain verified Gitea candidates
+description: Upload scoped unsigned candidates/evidence using native Gitea v4 and verify the downloaded ZIP.
+inputs:
+  name:
+    required: true
+    description: Unique artifact name within this run
+  targets:
+    required: false
+    default: ''
+    description: Comma-separated WGT target whitelist; empty uploads JSON evidence only
+runs:
+  using: node20
+  main: index.mjs

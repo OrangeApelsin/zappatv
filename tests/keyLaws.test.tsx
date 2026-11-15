@@ -1,0 +1,542 @@
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import assert from "node:assert/strict";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
+import { KEY } from "../src/hooks/useRemote";
+import {
+  hold,
+  mountApp,
+  muted,
+  panelOpen,
+  played,
+  press,
+  settle,
+  volumeChanges,
+  XTREAM_SOURCE,
+  xtreamFetch,
+} from "./support/app";
+
+/**
+ * The four laws of the key model, asserted rather than described.
+ *
+ * App.tsx sets these out at length, and they are the whole of how the application is driven:
+ *
+ *   1. At the picture, up and down always change channel. In every state, whatever is on
+ *      screen, whatever holds the focus.
+ *   2. OK does the obvious thing where it is pressed. At the picture that is the channel list.
+ *   3. Left and right move within whatever is showing.
+ *   4. RETURN always goes back, and closes the application only when there is nothing left
+ *      to close.
+ *
+ * Until now they existed only as prose, which meant the one part of the app that must not
+ * change by accident was the part nothing checked. Law 1 in particular is defended in the
+ * source as the thing that makes it impossible to get stuck, and "impossible" is a claim a
+ * test can hold to.
+ */
+
+const PLAYLIST = `#EXTM3U
+#EXTINF:-1 tvg-id="a" group-title="News",Alpha
+http://example.invalid/a.m3u8
+#EXTINF:-1 tvg-id="b" group-title="News",Beta
+http://example.invalid/b.m3u8
+#EXTINF:-1 tvg-id="c" group-title="News",Gamma
+http://example.invalid/c.m3u8`;
+
+const mount = (options: Parameters<typeof mountApp>[1] = {}) => mountApp(PLAYLIST, options);
+
+beforeEach(() => {
+  localStorage.clear();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.doUnmock("../src/services/player");
+});
+
+test("the playlist arrives and the panel opens on it", async () => {
+  await mount();
+  assert.ok(panelOpen(), "the app should open on the channel list");
+  expect(screen.getByText("Alpha")).toBeTruthy();
+});
+
+test("law 2: OK on a channel starts it and puts the list away", async () => {
+  await mount();
+  press(KEY.ENTER);
+  assert.equal(played.length, 1);
+  assert.ok(!panelOpen(), "the panel should withdraw once a channel is chosen");
+});
+
+test("law 2: Right on a channel chooses it like OK", async () => {
+  await mount();
+  press(KEY.RIGHT);
+  assert.equal(played.length, 1);
+  assert.ok(!panelOpen(), "the panel should withdraw once a channel is chosen");
+});
+
+test("the channel list stays open until it is dismissed", async () => {
+  await mount();
+  press(KEY.ENTER);
+  press(KEY.LEFT);
+  await settle(5000);
+  assert.ok(panelOpen(), "the channel list closed without being dismissed");
+});
+
+test("law 1: up and down change channel at the picture, always", async () => {
+  await mount();
+  press(KEY.ENTER); // watch the first channel
+  const started = played.length;
+
+  press(KEY.UP);
+  // Naming is immediate and tuning waits for the pressing to stop, so the channel has been
+  // named but not yet tuned.
+  assert.equal(played.length, started, "tuned before the viewer had finished pressing");
+  await settle(600);
+  assert.equal(played.length, started + 1, "channel up did not tune anything");
+});
+
+test("law 1 with inverted zapping direction steps backward on UP and forward on DOWN", async () => {
+  await mount();
+  const { useSettings } = await import("../src/stores/settings");
+  useSettings.getState().set("zappingDirection", "inverted");
+
+  press(KEY.ENTER); // watch channel 0 (Alpha)
+  await settle(600);
+  const started = played.length;
+
+  press(KEY.UP); // with inverted zapping, UP steps -1 (wraps to Gamma)
+  await settle(600);
+  expect(played.length).toBe(started + 1);
+  expect(played.at(-1)).toContain("/c.m3u8");
+
+  press(KEY.DOWN); // with inverted zapping, DOWN steps +1 (back to Alpha)
+  await settle(600);
+  expect(played.at(-1)).toContain("/a.m3u8");
+
+  useSettings.getState().set("zappingDirection", "standard");
+});
+
+test("law 1 holds even when the channel on screen has failed", async () => {
+  const { container } = await mount();
+  press(KEY.ENTER);
+  await settle(600);
+
+  // A channel that will not start must not trap anybody: one press has to move on.
+  assert.ok(container);
+  press(KEY.UP);
+  await settle(600);
+  assert.ok(played.length >= 2, "channel up did nothing on a failed channel");
+});
+
+test("law 3: left at the picture opens the channel list", async () => {
+  await mount();
+  press(KEY.ENTER);
+  assert.ok(!panelOpen());
+  press(KEY.LEFT);
+  assert.ok(panelOpen(), "left should reach the list that is off the left of the screen");
+});
+
+test("law 2: OK at the picture shows the playback banner & OSD, while left opens channel list", async () => {
+  await mount();
+  press(KEY.ENTER); // starts watching
+  press(KEY.BACK); // clears banner
+  expect(document.querySelector(".pb-stack")).toBeNull();
+  expect(panelOpen()).toBe(false);
+
+  press(KEY.ENTER); // OK at picture shows banner/OSD
+  expect(document.querySelector(".pb-stack")).toBeTruthy();
+  expect(panelOpen()).toBe(false);
+
+  press(KEY.LEFT); // Left at picture opens channel list
+  expect(panelOpen()).toBe(true);
+});
+
+test("holding OK at a clear picture toggles playback information without opening the panel", async () => {
+  await mount();
+  press(KEY.ENTER);
+  press(KEY.BACK);
+
+  await hold(KEY.ENTER);
+
+  assert.equal(panelOpen(), false);
+  expect(screen.getByRole("complementary", { name: "Playback information" })).toBeTruthy();
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    true,
+  );
+
+  await hold(KEY.ENTER);
+
+  assert.equal(panelOpen(), false);
+  expect(Boolean(screen.queryByRole("complementary", { name: "Playback information" }))).toBe(
+    false,
+  );
+});
+
+test("holding OK toggles playback information while the title badge is visible", async () => {
+  await mount();
+  press(KEY.ENTER);
+  await settle();
+
+  await hold(KEY.ENTER);
+
+  assert.equal(panelOpen(), false);
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    true,
+  );
+});
+
+test("holding OK toggles playback information while a stream is loading", async () => {
+  await mount({ slowPicture: 2_000 });
+  press(KEY.ENTER);
+  await settle();
+
+  await hold(KEY.ENTER);
+
+  assert.equal(panelOpen(), false);
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    true,
+  );
+});
+
+test("the clock remains visible everywhere except Settings", async () => {
+  await mount();
+  expect(document.querySelector(".clock")).toBeTruthy();
+
+  press(KEY.ENTER);
+  await settle();
+  expect(document.querySelector(".clock")).toBeTruthy();
+
+  press(KEY.YELLOW);
+  expect(document.querySelector(".clock")).toBeNull();
+
+  press(KEY.BACK);
+  expect(document.querySelector(".clock")).toBeTruthy();
+});
+
+test("law 4: RETURN clears the screen before it offers to close the app", async () => {
+  await mount();
+  press(KEY.ENTER); // watching, banner up
+  assert.ok(!panelOpen());
+
+  press(KEY.BACK); // clears the banner
+  assert.equal(document.querySelector(".dialog"), null, "offered to exit on the first press");
+
+  press(KEY.BACK); // returns to start page
+  assert.equal(
+    document.querySelector(".dialog"),
+    null,
+    "should not offer to exit from picture",
+  );
+  expect(document.querySelector("#view-home")).toBeTruthy();
+
+  press(KEY.BACK); // on start page, now it asks
+  assert.ok(document.querySelector(".dialog"), "never offered to close the app");
+});
+
+test("law 4: RETURN in the panel goes back to the picture rather than closing", async () => {
+  await mount();
+  press(KEY.ENTER);
+  press(KEY.LEFT);
+  assert.ok(panelOpen());
+  press(KEY.BACK);
+  assert.ok(!panelOpen());
+  assert.equal(document.querySelector(".dialog"), null);
+});
+
+test("law 4 returns from the Xtream Guide to the same live row", async () => {
+  await mountApp("", {
+    source: XTREAM_SOURCE,
+    fetchImplementation: xtreamFetch(
+      [{ category_id: "10", category_name: "News" }],
+      [{ stream_id: "1", name: "Provider One", category_id: "10", stream_type: "live" }],
+    ),
+  });
+
+  press(KEY.ENTER);
+  await settle(0);
+  press(KEY.RIGHT);
+  await settle(0);
+  expect(document.querySelector(".guide-drawer")).toBeTruthy();
+  press(KEY.BACK);
+  await settle(180);
+  expect(document.querySelector(".guide-drawer")).toBeNull();
+  expect(panelOpen()).toBe(false);
+
+  press(KEY.LEFT);
+  expect(document.querySelector(".list .row.selected .row-label")?.textContent).toBe(
+    "Provider One",
+  );
+  expect(panelOpen()).toBe(true);
+});
+
+test("law 4 remains one panel RETURN after choosing Xtream content", async () => {
+  await mountApp("", {
+    source: XTREAM_SOURCE,
+    fetchImplementation: xtreamFetch(
+      [{ category_id: "10", category_name: "News" }],
+      [
+        {
+          stream_id: "1",
+          name: "Provider One",
+          category_id: "10",
+          stream_type: "live",
+        },
+      ],
+    ),
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Movies" }));
+  expect(screen.getByRole("button", { name: "Movies" }).getAttribute("aria-pressed")).toBe(
+    "true",
+  );
+
+  press(KEY.BACK);
+  expect(panelOpen()).toBe(false);
+  expect(document.querySelector(".dialog")).toBeNull();
+});
+
+test("law 4 removes one movie frame before it closes the panel", async () => {
+  const fetchImplementation = async (input: string | URL) => {
+    const action = new URL(String(input)).searchParams.get("action") ?? "authenticate";
+    const body: Record<string, unknown> = {
+      authenticate: {
+        user_info: { auth: 1, status: "Active" },
+        server_info: { server_protocol: "http", url: "provider.example" },
+      },
+      get_live_categories: [{ category_id: "1", category_name: "Live" }],
+      get_vod_categories: [{ category_id: "10", category_name: "Cinema" }],
+      get_series_categories: [],
+      get_live_streams: [{ stream_id: "1", category_id: "1", name: "Live One" }],
+      get_vod_streams: [
+        { stream_id: "100", category_id: "10", name: "Film", container_extension: "mp4" },
+      ],
+      get_vod_info: {
+        info: { name: "Film", plot: "Plot" },
+        movie_data: { stream_id: "100", category_id: "10", container_extension: "mp4" },
+      },
+    };
+    return { ok: true, status: 200, json: async () => body[action] };
+  };
+  await mountApp("", { source: XTREAM_SOURCE, fetchImplementation });
+  fireEvent.click(screen.getByRole("button", { name: "Movies" }));
+  await settle(100);
+  fireEvent.click(screen.getAllByText("Cinema")[0].closest("button")!);
+  await settle(0);
+  fireEvent.click(
+    screen
+      .getAllByText("Film")
+      .find((item) => item.closest("button"))!
+      .closest("button")!,
+  );
+  await settle(0);
+
+  press(KEY.BACK);
+  expect(panelOpen()).toBe(true);
+  expect(screen.getByText("Film")).toBeTruthy();
+
+  press(KEY.BACK);
+  expect(panelOpen()).toBe(false);
+});
+
+test("RETURN closes the channel panel before offering to exit when nothing is playing", async () => {
+  await mount();
+  assert.ok(panelOpen());
+
+  press(KEY.BACK);
+  assert.equal(panelOpen(), false);
+  assert.equal(Boolean(document.querySelector(".dialog")), false);
+
+  press(KEY.BACK);
+  expect(document.querySelector("#view-home")).toBeTruthy();
+  assert.equal(Boolean(document.querySelector(".dialog")), false);
+
+  press(KEY.BACK);
+  assert.ok(document.querySelector(".dialog"));
+});
+
+test("a dialled number tunes the channel carrying it", async () => {
+  await mount();
+  press(KEY.ENTER);
+  const started = played.length;
+  press(51); // "3"
+  await settle(2200);
+  assert.equal(played.length, started + 1);
+  assert.match(played[played.length - 1], /c\.m3u8$/);
+});
+
+test("a dialled number cannot tune a hidden category", async () => {
+  await mountApp(PLAYLIST, { hiddenCategories: ["News"] });
+  press(51);
+  await settle(2200);
+  assert.deepEqual(played, []);
+});
+
+test("OK finishes a dialled number rather than waiting it out", async () => {
+  await mount();
+  press(KEY.ENTER);
+  const started = played.length;
+  press(50); // "2"
+  press(KEY.ENTER);
+  assert.equal(played.length, started + 1, "OK did not commit the number");
+  assert.match(played[played.length - 1], /b\.m3u8$/);
+});
+
+test("the yellow key opens settings from anywhere", async () => {
+  await mount();
+  press(KEY.YELLOW);
+  assert.ok(document.querySelector(".sheet"), "the settings sheet did not open");
+});
+
+test("settings preserves audio without restarting playback", async () => {
+  await mount();
+  press(KEY.ENTER);
+  const started = played.length;
+
+  press(KEY.YELLOW);
+  assert.equal(muted, false, "settings muted the playing channel");
+  assert.equal(played.length, started, "opening settings restarted playback");
+
+  press(KEY.BACK);
+  assert.equal(muted, false, "closing settings changed audio mute state");
+  assert.equal(played.length, started, "closing settings restarted playback");
+});
+
+test("the debug Smart Remote starts closed and wires volume controls", async () => {
+  await mount();
+  press(KEY.ENTER);
+  assert.ok(screen.getByRole("button", { name: "Show Smart Remote" }));
+  assert.equal(document.querySelector(".remote"), null, "the debug remote opened by default");
+
+  await act(async () => {
+    screen.getByRole("button", { name: "Show Smart Remote" }).click();
+  });
+  screen.getByRole("button", { name: "Volume up" }).click();
+  screen.getByRole("button", { name: "Volume down" }).click();
+
+  assert.deepEqual(volumeChanges, [0.1, -0.1]);
+});
+
+test("holding OK on the debug Smart Remote toggles playback information", async () => {
+  await mount();
+  press(KEY.ENTER);
+  press(KEY.BACK);
+  fireEvent.click(screen.getByRole("button", { name: "Show Smart Remote" }));
+  const ok = screen.getByRole("button", { name: "Select" });
+
+  fireEvent.pointerDown(ok, { pointerId: 1 });
+  await settle(600);
+  fireEvent.pointerUp(ok, { pointerId: 1 });
+
+  assert.equal(panelOpen(), false);
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    true,
+  );
+});
+
+test("the green key favourites the highlighted channel and says so", async () => {
+  await mount();
+  press(KEY.GREEN);
+  expect(screen.getByText("Added to favourites")).toBeTruthy();
+});
+
+test("playback information stays enabled through RETURN and Right", async () => {
+  await mount({ playbackStats: true });
+  press(KEY.ENTER);
+  press(KEY.BACK);
+  press(KEY.RIGHT);
+
+  const info = screen.getByRole("complementary", { name: "Playback information" });
+  expect(info.querySelector("kbd")?.textContent).toBe("OK");
+  expect(info.textContent).toContain("AVPlay");
+  expect(info.textContent).toMatch(/1920.*1080/);
+  expect(info.textContent).toContain("avc1.640028");
+  expect(info.textContent).toContain("4.5 Mbps");
+  expect(info.textContent).toContain("12.4 s");
+  expect(info.textContent).toContain("2 / 1000");
+  expect(info.textContent).toContain("3 / 5");
+  assert.equal(Boolean(document.querySelector(".dialog")), false);
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    true,
+  );
+});
+
+test("the side panel keeps information visible while settings covers it", async () => {
+  await mount({ playbackStats: true });
+  press(KEY.ENTER);
+  press(KEY.LEFT);
+
+  expect(screen.getByRole("complementary", { name: "Playback information" })).toBeTruthy();
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    true,
+  );
+
+  press(KEY.YELLOW);
+  assert.equal(
+    Boolean(screen.queryByRole("complementary", { name: "Playback information" })),
+    false,
+  );
+  press(KEY.BACK);
+  expect(screen.getByRole("complementary", { name: "Playback information" })).toBeTruthy();
+  press(KEY.BACK);
+  expect(screen.getByRole("complementary", { name: "Playback information" })).toBeTruthy();
+});
+
+test("the blue key does not control playback information", async () => {
+  await mount();
+  press(KEY.BLUE);
+  press(KEY.ENTER);
+
+  assert.equal(
+    Boolean(screen.queryByRole("complementary", { name: "Playback information" })),
+    false,
+  );
+  assert.equal(
+    JSON.parse(localStorage.getItem("openiptv.settings") ?? "{}").showPlaybackStats,
+    false,
+  );
+});
+
+test("playback information remains visible when the channel fails", async () => {
+  await mount({ playbackStats: true, faultPicture: true });
+  press(KEY.ENTER);
+
+  expect(screen.getByRole("complementary", { name: "Playback information" })).toBeTruthy();
+});
+
+test("no key that leaves you at the picture can strand you there", async () => {
+  await mount();
+  press(KEY.ENTER);
+
+  /*
+   * The claim the source makes is that there is no state *at the picture* where channel up
+   * leaves the viewer where they were, which is what makes it impossible to get stuck.
+   *
+   * Keys that deliberately go somewhere else are not part of it and are covered above: OK
+   * and Left open the panel, Stop returns to it, RETURN offers the exit. What is swept here
+   * is every key that answers and leaves you watching, including the ones that put something
+   * on screen or take a focus.
+   */
+  const staysAtThePicture = [
+    KEY.RIGHT, // takes a focus on the buttons
+    KEY.GREEN, // favourites, and raises a message
+    KEY.PLAY,
+    KEY.PAUSE,
+    KEY.FORWARD, // reloads the channel
+    KEY.YELLOW - 1, // a key the app does not handle at all
+  ];
+
+  for (const code of staysAtThePicture) {
+    press(code);
+    assert.ok(!panelOpen(), `key ${code} was expected to leave the viewer watching`);
+    const before = played.length;
+    press(KEY.UP);
+    await settle(600);
+    assert.ok(played.length > before, `channel up did nothing after key ${code}`);
+  }
+});

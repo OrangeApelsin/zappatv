@@ -1,0 +1,88 @@
+{
+  "name": "zappatv",
+  "version": "1.0",
+  "description": "Zappa TV IPTV player for Samsung Tizen TVs",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "vite",
+    "build": "tsc -b && node scripts/build.mjs",
+    "typecheck": "tsc -b",
+    "preview": "vite preview",
+    "icon": "node scripts/icon.mjs",
+    "package": "node scripts/package-wgt.mjs",
+    "package:all": "node scripts/build-all.mjs",
+    "artifact:check": "node scripts/check-artifacts.mjs",
+    "artifact:smoke": "node scripts/tv/worker-smoke.mjs",
+    "release:preflight": "node scripts/release.mjs --preflight",
+    "release:dry-run": "node scripts/release.mjs --dry-run",
+    "simulator": "npm run package && arch -x86_64 \"$HOME/.tizen-extension-platform/server/sdktools/data/tools/sec-tv-simulator/nwjs.app/Contents/MacOS/nwjs\" --platform samsung-tv --tizentvversion 10.0 --resolution 1920x1080 --file \"$PWD/build/zappa.wgt\"",
+    "deploy": "./scripts/deploy.sh",
+    "tv": "node scripts/tv/sim.mjs",
+    "tv:bench": "node scripts/tv/sim.mjs --bench",
+    "tv:calibrate": "node scripts/tv/calibrate.mjs",
+    "tv:startup-sample": "node scripts/tv/startup-sample.mjs",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "deps:check": "node scripts/dependency-check.mjs && npm audit --audit-level=high",
+    "tv:video": "node scripts/tv/sim.mjs --video",
+    "tv:floor": "node scripts/tv/sim.mjs --floor",
+    "tv:bench:floor": "node scripts/tv/sim.mjs --floor --bench",
+    "tv:quick": "node scripts/tv/sim.mjs --floor --bench --quick",
+    "lint": "biome lint --error-on-warnings",
+    "lint:fix": "biome lint --write",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "test:watch": "vitest",
+    "tv:gap": "node scripts/tv/gap-parity.mjs",
+    "tv:engines": "node scripts/tv/engine-parity.mjs",
+    "tv:budget": "node scripts/tv/sim.mjs --floor --bench --budget",
+    "tv:on-set": "node scripts/tv/on-set.mjs",
+    "wasm:check": "node scripts/wasm-check.mjs",
+    "wasm:sums": "node scripts/wasm-check.mjs --write",
+    "store:assets": "node scripts/store-assets.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "keywords": [
+    "iptv",
+    "m3u",
+    "hls",
+    "tizen",
+    "samsung-tv",
+    "smart-tv",
+    "television",
+    "player"
+  ],
+  "author": "Shayan Khaksar",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "uqr": "0.1.3",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "acorn": "8.19.0",
+    "jsdom": "30.1.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": "^22.23.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/example/zappa2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/example/zappa2/issues"
+  },
+  "homepage": "https://github.com/example/zappa2#readme"
+}

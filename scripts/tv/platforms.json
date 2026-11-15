@@ -1,0 +1,164 @@
+{
+  "$comment": [
+    "Samsung engine families, package policy and build/grammar targets share this table.",
+    "Representative desktop Chromium checks do not establish Samsung firmware or AVPlay support."
+  ],
+  "source": "https://developer.samsung.com/smarttv/develop/specifications/web-engine-specifications.html",
+  "checked": "2026-11-08",
+  "supportedFrom": "5.0",
+  "platforms": [
+    {
+      "tizen": "3.0",
+      "year": 2017,
+      "chromium": 47,
+      "snapshotNear": 352221,
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.0.0 Safari/537.36",
+      "floor": false,
+      "package": {
+        "suffix": "-tizen3",
+        "grammar": 2015,
+        "experimental": true,
+        "injectCssVars": true
+      },
+      "arrives": [],
+      "lacks": []
+    },
+    {
+      "tizen": "4.0",
+      "year": 2018,
+      "chromium": 56,
+      "snapshotNear": 433059,
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 4.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.0.0 Safari/537.36",
+      "floor": false,
+      "package": {
+        "suffix": "-tizen4",
+        "grammar": 2017,
+        "experimental": true,
+        "injectCssVars": false
+      },
+      "arrives": [],
+      "lacks": []
+    },
+    {
+      "tizen": "5.0",
+      "year": 2019,
+      "chromium": 63,
+      "snapshotNear": 508578,
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.0.0 Safari/537.36",
+      "floor": true,
+      "package": {
+        "suffix": "-tizen5",
+        "grammar": 2018,
+        "experimental": false,
+        "injectCssVars": false
+      },
+      "arrives": [],
+      "lacks": []
+    },
+    {
+      "tizen": "5.5",
+      "year": 2020,
+      "chromium": 69,
+      "chromiumFull": "69.0.3497.106",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106.1/5.5 TV Safari/537.36",
+      "snapshotNear": 576753,
+      "arrives": [],
+      "lacks": [
+        "flex gap (Chromium 84), which is why capabilities.ts probes for it",
+        "min(), max() and clamp() (79)",
+        "optional chaining and nullish coalescing (80), which the es2019 build target lowers",
+        "inset (87), aspect-ratio (88), :focus-visible (86)",
+        "String.matchAll (73), Object.fromEntries (73), Array.at (92), String.replaceAll (85)",
+        "queueMicrotask (71), which React feature detects and falls back to a Promise for"
+      ],
+      "package": {
+        "suffix": "",
+        "grammar": 2019,
+        "experimental": false,
+        "injectCssVars": false
+      }
+    },
+    {
+      "tizen": "6.0",
+      "year": 2021,
+      "chromium": 76,
+      "chromiumFull": "76.0.3809.146",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.0) AppleWebKit/537.36 (KHTML, like Gecko) 76.0.3809.146/6.0 TV Safari/537.36",
+      "snapshotNear": 681094,
+      "arrives": [
+        "String.matchAll",
+        "Object.fromEntries",
+        "queueMicrotask",
+        "Promise.allSettled"
+      ]
+    },
+    {
+      "tizen": "6.5",
+      "year": 2022,
+      "chromium": 85,
+      "chromiumFull": "85.0.4183.93",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 6.5) AppleWebKit/537.36 (KHTML, like Gecko) 85.0.4183.93/6.5 TV Safari/537.36",
+      "snapshotNear": 800218,
+      "arrives": [
+        "optional chaining and nullish coalescing",
+        "min(), max(), clamp()",
+        "flex gap",
+        ":focus-visible",
+        "String.replaceAll"
+      ]
+    },
+    {
+      "tizen": "7.0",
+      "year": 2023,
+      "chromium": 94,
+      "chromiumFull": "94.0.4606.31",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) 94.0.4606.31/7.0 TV Safari/537.36",
+      "snapshotNear": 911515,
+      "arrives": [
+        "inset",
+        "aspect-ratio",
+        "Array.at",
+        "Object.hasOwn"
+      ]
+    },
+    {
+      "tizen": "8.0",
+      "year": 2024,
+      "chromium": 108,
+      "chromiumFull": "108.0.5359.1",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 8.0) AppleWebKit/537.36 (KHTML, like Gecko) 108.0.5359.1/8.0 TV Safari/537.36",
+      "snapshotNear": 1067848,
+      "arrives": [
+        ":has()",
+        "container queries",
+        "Array.findLast"
+      ]
+    },
+    {
+      "tizen": "9.0",
+      "year": 2025,
+      "chromium": 120,
+      "chromiumFull": "120.0.6099.5",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36",
+      "snapshotNear": 1217362,
+      "arrives": [
+        "nesting",
+        "text-wrap: balance",
+        "Array.toSorted"
+      ]
+    },
+    {
+      "tizen": "10.0",
+      "year": 2026,
+      "chromium": 130,
+      "chromiumFull": "130.0.6723.44",
+      "userAgent": "Mozilla/5.0 (SMART-TV; LINUX; Tizen 10.0) AppleWebKit/537.36 (KHTML, like Gecko) 130.0.6723.44/10.0 TV Safari/537.36",
+      "snapshotNear": 1356013,
+      "arrives": [
+        "@starting-style",
+        "field-sizing"
+      ],
+      "ceiling": true
+    }
+  ]
+}

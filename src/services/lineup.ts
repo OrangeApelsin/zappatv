@@ -1,0 +1,107 @@
+import type { FavouriteSnapshot } from "../stores/personal";
+import type { HiddenCategoryMode } from "../stores/settings";
+import type { Channel } from "../types";
+
+/**
+ * How channel lists are built and navigation indices wrap.
+ *
+ * Both are arithmetic over lists, both were wrong in ways nothing on screen announced, and
+ * both are pure, which is why they are here rather than inside a component: a mistake in
+ * either shows up as the interface quietly going somewhere the viewer did not ask to go.
+ */
+
+export const FAVOURITES = "Favourites";
+
+/**
+ * Move an index by one and come out the other side.
+ *
+ * Samsung's input guidance says the opposite: "Focus does not loop in a list. Thus, focus stops
+ * moving when it reaches the first or last item in a list." That holds for focus, and it is what
+ * the panel and the buttons do. Channel up is not focus: it wraps, on this app and on every
+ * television ever made, and the channel keys and the arrows share one list, so stopping dead at
+ * the end while the keys came round would be two ways of reaching the same channel disagreeing
+ * about what happens at the end.
+ */
+export const wrap = (index: number, length: number) =>
+  length < 1 ? 0 : ((index % length) + length) % length;
+
+/**
+ * Where the cursor in the channel column lands, with or without a search field above the rows.
+ *
+ * The field is index -1, so a searched column is a ring of `count + 1` places and a category is a
+ * ring of `count`. Expressed by shifting the whole thing up by one before wrapping and back down
+ * afterwards, which is the only way to wrap a range that starts below zero without a special case
+ * at each end. The special cases are what this replaces: they had the field reachable by pressing
+ * up from the first row and unreachable from the last, so a viewer at the bottom of a long list
+ * of results had to walk back up through all of them to change what they had typed.
+ *
+ * Wrapping at all, rather than stopping, because the rows below it wrap: the column is one list
+ * to walk whether or not a keyboard is sitting on top of it.
+ */
+export function stepColumn(index: number, delta: number, count: number, withField: boolean) {
+  if (!withField) return wrap(index + delta, count);
+  return wrap(index + 1 + delta, count + 1) - 1;
+}
+
+export interface ChannelList {
+  key: string;
+  name: string;
+  channels: Channel[];
+  synthetic?: "favourites";
+}
+
+export const isFavouritesList = (list: ChannelList | undefined) =>
+  list?.synthetic === "favourites";
+
+interface Visibility {
+  hiddenCategories: readonly string[];
+  hiddenCategoryMode: HiddenCategoryMode;
+}
+
+const VISIBLE: Visibility = { hiddenCategories: [], hiddenCategoryMode: "exclude" };
+
+/**
+ * The playlist's own categories, with Favourites first while there is something in it.
+ *
+ * An empty row is a row that says nothing, and a rail that opens with one is a rail whose
+ * first line is an apology. So it appears with the first favourite and goes with the last.
+ *
+ * That costs something, and the cost is paid in App: inserting a list at position zero moves
+ * every category down by one, and a viewer who pressed the green key asked to favourite a
+ * channel, not to be taken somewhere else. The green key is the only thing that can add or
+ * remove this row, so it is the one place that corrects for it.
+ */
+export function lineupOf(
+  channels: Channel[],
+  categories: ChannelList[],
+  favourites: readonly (string | FavouriteSnapshot)[],
+  visibility: Visibility = VISIBLE,
+): {
+  lists: ChannelList[];
+  browsableChannels: Channel[];
+  searchableChannels: Channel[];
+} {
+  const hidden = new Set(visibility.hiddenCategories);
+  const browsableChannels = hidden.size
+    ? channels.filter((channel) => !hidden.has(channel.xtream?.categoryKey ?? channel.group))
+    : channels;
+  const nonEmptyCategories = categories.filter((category) => category.channels.length > 0);
+  const visibleCategories = hidden.size
+    ? nonEmptyCategories.filter((category) => !hidden.has(category.key))
+    : nonEmptyCategories;
+  const searchableChannels =
+    visibility.hiddenCategoryMode === "search" ? channels : browsableChannels;
+  const wanted = new Set(
+    favourites.map((favourite) =>
+      typeof favourite === "string" ? favourite : favourite.itemKey,
+    ),
+  );
+  const mine = searchableChannels.filter((channel) => wanted.has(channel.id));
+  const lists: ChannelList[] = mine.length
+    ? [
+        { key: "favourites", name: FAVOURITES, channels: mine, synthetic: "favourites" },
+        ...visibleCategories,
+      ]
+    : visibleCategories;
+  return { lists, browsableChannels, searchableChannels };
+}

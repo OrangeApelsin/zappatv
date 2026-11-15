@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 200" width="100%" height="100%">
+  <defs>
+    <!-- Vibrant Gradients for TV / Modern App feel -->
+    <linearGradient id="zapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF007A" />
+      <stop offset="50%" stop-color="#7B2CBF" />
+      <stop offset="100%" stop-color="#00F0FF" />
+    </linearGradient>
+
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E0E6ED" />
+    </linearGradient>
+
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <style>
+    .zappa-brand-title {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-weight: 900;
+      font-size: 110px;
+      letter-spacing: 4px;
+      fill: url(#textGradient);
+    }
+    .zappa-brand-tagline {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-weight: 600;
+      font-size: 24px;
+      letter-spacing: 8px;
+      fill: #00F0FF;
+      opacity: 0.9;
+    }
+    @media (prefers-color-scheme: light) {
+      .zappa-brand-title { fill: #0F172A; }
+      .zappa-brand-tagline { fill: #0284C7; }
+    }
+    :root[data-theme="light"] .zappa-brand-title { fill: #0F172A; }
+    :root[data-theme="light"] .zappa-brand-tagline { fill: #0284C7; }
+  </style>
+
+  <!-- Logo Symbol & Text -->
+  <g id="zappa-logo-group">
+    <!-- Icon: Lightning Bolt embedded in Screen -->
+    <g transform="translate(20, 20)">
+      <!-- Outer TV Screen Outline / Frame -->
+      <rect x="0" y="0" width="220" height="160" rx="40" fill="none" stroke="url(#zapGradient)" stroke-width="12" filter="url(#glow)" />
+      
+      <!-- Lightning Bolt / ZZap Icon -->
+      <path d="M 125 25 L 75 90 L 110 90 L 85 145 L 145 75 L 110 75 Z" fill="url(#zapGradient)" filter="url(#glow)" />
+    </g>
+
+    <!-- App Name: ZAPPA -->
+    <text x="270" y="135" class="zappa-brand-title">ZAPPA</text>
+
+    <!-- Subtitle / Tagline for IPTV context -->
+    <text x="275" y="175" class="zappa-brand-tagline">IPTV PLAYER</text>
+  </g>
+</svg>
+
