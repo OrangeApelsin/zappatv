@@ -225,6 +225,8 @@ const ENGLISH = {
   "settings.sortAlphabetically": "Sort channels alphabetically",
   "settings.sortAlphabeticallyHint": "Sort by channel name instead of playlist order",
   "settings.screenFit": "Screen fit",
+  "settings.original": "Original",
+  "settings.originalHint": "Native untouched aspect ratio without scaling or cropping",
   "settings.fill": "Fill",
   "settings.fillHint": "Fills the screen, cropping the edges of the picture",
   "settings.fit": "Fit",

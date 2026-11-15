@@ -372,11 +372,11 @@ test("pressing Right while watching focuses OSD controls and cycles Aspect Ratio
   press(KEY.RIGHT);
   assert.equal(document.querySelector(".pb-pill.focused")?.textContent, "Subtitles: Automatic");
   press(KEY.RIGHT);
-  assert.equal(document.querySelector(".pb-pill.focused")?.textContent, "Aspect: Fill");
+  assert.equal(document.querySelector(".pb-pill.focused")?.textContent, "Aspect: Original");
 
-  // Press OK to cycle aspect ratio from Fill -> Fit
+  // Press OK to cycle aspect ratio from Original -> Auto
   press(KEY.ENTER);
-  assert.equal(document.querySelector(".pb-pill.focused")?.textContent, "Aspect: Fit");
+  assert.equal(document.querySelector(".pb-pill.focused")?.textContent, "Aspect: Automatic 4:3");
 });
 
 test("OSD playback banner is horizontally centered (TICKET-802)", () => {
@@ -453,21 +453,21 @@ test("Live TV OSD Aspect button cycles single step per press without button doub
 
   const aspectPill = () => document.querySelectorAll(".pb-pill")[2];
   expect(aspectPill()?.getAttribute("tabindex")).toBe("-1");
-  expect(aspectPill()?.textContent).toContain("Fill");
+  expect(aspectPill()?.textContent).toContain("Original");
 
-  // Single OK press -> Fit
+  // Single OK press -> Auto
   press(KEY.ENTER);
   await settle(50);
-  expect(aspectPill()?.textContent).toContain("Fit");
+  expect(aspectPill()?.textContent).toContain("Auto");
 
-  // Single click -> Stretch
+  // Single click -> Fill
   const { fireEvent } = await import("@testing-library/react");
   fireEvent.click(aspectPill()!);
   await settle(50);
-  expect(aspectPill()?.textContent).toContain("Stretch");
+  expect(aspectPill()?.textContent).toContain("Fill");
 
-  // Single Yellow press -> Auto
+  // Single Yellow press -> Fit
   press(KEY.YELLOW);
   await settle(50);
-  expect(aspectPill()?.textContent).toContain("Auto");
+  expect(aspectPill()?.textContent).toContain("Fit");
 });

@@ -462,6 +462,13 @@ test("mid-playback aspect switching refreshes display rect and stretches cleanly
   av.prepared?.ok();
   av.calls.length = 0;
 
+  player.setFit("original");
+  assert.deepEqual(av.calls.slice(-2), [
+    "setDisplayRect",
+    "setDisplayMethod:PLAYER_DISPLAY_MODE_LETTER_BOX",
+  ]);
+
+  av.calls.length = 0;
   player.setFit("fit");
   assert.deepEqual(av.calls.slice(-2), [
     "setDisplayRect",

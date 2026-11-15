@@ -171,6 +171,8 @@ export default {
   "settings.sortAlphabetically": "ترتيب القنوات أبجديًا",
   "settings.sortAlphabeticallyHint": "الترتيب حسب اسم القناة بدلًا من ترتيب قائمة التشغيل",
   "settings.screenFit": "ملاءمة الشاشة",
+  "settings.original": "أصلي",
+  "settings.originalHint": "نسبة العرض إلى الارتفاع الأصلية بدون تغيير الحجم أو الاقتصاص",
   "settings.fill": "ملء",
   "settings.fillHint": "ملء الشاشة مع قص حواف الصورة",
   "settings.fit": "ملاءمة",

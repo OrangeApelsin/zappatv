@@ -1,3 +1,5 @@
+export type { Fit } from "./services/player";
+
 export interface PlaybackTarget {
   id: string;
   playlistId: string;

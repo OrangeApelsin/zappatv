@@ -55,6 +55,11 @@ export function getGuideTimeOffsetSeconds(offset: GuideTimeOffset | string | und
 
 export const ASPECTS = [
   {
+    id: "original",
+    label: "Original",
+    note: "Native untouched aspect ratio without scaling or cropping",
+  },
+  {
     id: "auto",
     label: "Auto (4:3 Fill)",
     note: "Stretches 4:3 SD channels to full screen while keeping 16:9 letterboxed",
@@ -313,11 +318,9 @@ const DEFAULTS = {
   activePlaylistId: "",
   showNumbers: true,
   showLogos: true,
-  /* Fill, and it leads the list because it is the default. Almost everything in these
-     playlists is sixteen by nine, and a television that leaves bars around a picture which
-     would have fitted reads as a fault rather than as a choice. Fit is one press away for
-     the feeds that get cropped badly, which are the standard definition ones. */
-  aspectId: "fill" as AspectId,
+  /* Original is the default: displays video strictly in its native untouched aspect ratio
+     without scaling, stretching, or cropping. */
+  aspectId: "original" as AspectId,
   showClock: true,
   showPlaybackStats: false,
   resumeLast: true,

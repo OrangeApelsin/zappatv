@@ -215,6 +215,8 @@ export default {
   "settings.sortAlphabetically": "Sortera kanaler alfabetiskt",
   "settings.sortAlphabeticallyHint": "Sortera efter kanalnamn istället för spellistans ordning",
   "settings.screenFit": "Skärmanpassning",
+  "settings.original": "Original",
+  "settings.originalHint": "Ursprungligt bildförhållande utan skalning eller beskärning",
   "settings.fill": "Fyll",
   "settings.fillHint": "Fyller skärmen och beskär bildens kanter",
   "settings.fit": "Anpassa",

@@ -29,21 +29,25 @@ export function Playback() {
       aspect.id === "auto"
         ? aspect.label
         : t(
-          aspect.id === "fill"
-            ? "settings.fill"
-            : aspect.id === "fit"
-              ? "settings.fit"
-              : "settings.stretch",
+          aspect.id === "original"
+            ? "settings.original"
+            : aspect.id === "fill"
+              ? "settings.fill"
+              : aspect.id === "fit"
+                ? "settings.fit"
+                : "settings.stretch",
         ),
     note:
       aspect.id === "auto"
         ? aspect.note
         : t(
-          aspect.id === "fill"
-            ? "settings.fillHint"
-            : aspect.id === "fit"
-              ? "settings.fitHint"
-              : "settings.stretchHint",
+          aspect.id === "original"
+            ? "settings.originalHint"
+            : aspect.id === "fill"
+              ? "settings.fillHint"
+              : aspect.id === "fit"
+                ? "settings.fitHint"
+                : "settings.stretchHint",
         ),
   }));
 

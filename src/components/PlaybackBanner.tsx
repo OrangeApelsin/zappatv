@@ -83,6 +83,8 @@ export const formatAspectBadge = (
   t: ReturnType<typeof useLocale>["t"],
 ): string => {
   switch (fit) {
+    case "original":
+      return t("settings.original");
     case "auto":
       return `${t("osd.auto")} 4:3`;
     case "fill":

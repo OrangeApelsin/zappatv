@@ -165,9 +165,10 @@ export const NARROW_ASPECT = 1.6;
  * Named after what the viewer sees rather than after either engine's vocabulary, since the
  * TV exposes these as display methods, applied without reopening the stream.
  */
-export type Fit = "auto" | "fit" | "fill" | "stretch";
+export type Fit = "original" | "auto" | "fit" | "fill" | "stretch";
 
 const AVPLAY_MODE: Record<Fit, string> = {
+  original: "PLAYER_DISPLAY_MODE_LETTER_BOX",
   auto: "PLAYER_DISPLAY_MODE_LETTER_BOX",
   fit: "PLAYER_DISPLAY_MODE_LETTER_BOX",
   fill: "PLAYER_DISPLAY_MODE_FULL_SCREEN",
@@ -354,7 +355,7 @@ export class Player {
   private phase = "setup";
   /** Whether this attempt has already reported why it failed. */
   private failed = false;
-  private fit: Fit = "fit";
+  private fit: Fit = "original";
   private watchdog: number | undefined;
   private sink: (e: PlayerEvent) => void;
   /** Whether the viewer is holding the picture, so a still frame is not read as a fault. */
