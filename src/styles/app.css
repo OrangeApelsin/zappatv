@@ -4402,6 +4402,7 @@ html[dir="rtl"] .pb-pill-badge {
   z-index: var(--z-notice);
   pointer-events: none;
   font-weight: 600;
+  white-space: pre-wrap;
 }
 
 .subtitle-overlay.size-s {

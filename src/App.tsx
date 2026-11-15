@@ -34,6 +34,7 @@ import { Settings } from "./components/Settings";
 import { Sidebar } from "./components/Sidebar";
 import { remoteVisible, SmartRemote } from "./components/SmartRemote";
 import { StartPage, type StartNowPlaying } from "./components/StartPage";
+import { SubtitleRenderer } from "./components/SubtitleRenderer";
 import { calcScrubStep, clampSeekTarget, formatDelta, SEEK_STEPS } from "./components/ScrubberTimeline";
 import { UpNextPrompt } from "./components/UpNextPrompt";
 import { VodMovieDetails } from "./components/VodMovieDetails";
@@ -4435,7 +4436,7 @@ export default function App() {
           className={`subtitle-overlay size-${settings.subtitleSize} style-${settings.subtitleStyle}`}
           aria-live="polite"
         >
-          {tuner.subtitleText}
+          <SubtitleRenderer text={tuner.subtitleText} />
         </div>
       )}
       {current && !modal && settings.showPlaybackStats && (
