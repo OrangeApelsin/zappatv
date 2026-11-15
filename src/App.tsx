@@ -270,6 +270,7 @@ export default function App() {
       zappingDirection: s.zappingDirection,
       subtitleSize: s.subtitleSize,
       subtitleStyle: s.subtitleStyle,
+      subtitlePosition: s.subtitlePosition,
       upNextCountdown: s.upNextCountdown,
       screensaverTimeout: s.screensaverTimeout,
       parentalPin: s.parentalPin,
