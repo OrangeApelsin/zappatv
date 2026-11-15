@@ -400,3 +400,31 @@ test("cross-season next episode resolution", async () => {
   expect(played.length).toBe(2);
   expect(played[1]).toBe("http://provider.example/series/viewer/secret/201.mp4");
 });
+
+test("TICKET-2402: UpNextPrompt corner card renders compact structure and truncated title", () => {
+  const onPlayNow = vi.fn();
+  const onCancel = vi.fn();
+
+  const { container } = render(
+    <UpNextPrompt
+      title="Very Long Episode Title That Exceeds Normal Card Boundaries And Must Be Clamped"
+      season={1}
+      episode={5}
+      seconds={15}
+      onPlayNow={onPlayNow}
+      onCancel={onCancel}
+    />,
+  );
+
+  const card = container.querySelector("#upNextCard");
+  expect(card).toBeTruthy();
+  const title = container.querySelector(".up-next-video-title");
+  expect(title?.textContent).toContain("Very Long Episode Title");
+
+  const cancelBtn = container.querySelector("#cancelNextBtn");
+  expect(cancelBtn).toBeTruthy();
+
+  const ring = container.querySelector(".up-next-ring");
+  expect(ring?.getAttribute("width")).toBe("44");
+  expect(ring?.getAttribute("height")).toBe("44");
+});

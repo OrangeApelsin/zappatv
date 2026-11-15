@@ -5189,10 +5189,12 @@ html[dir="rtl"] .pb-pill-badge {
 .no-flex-gap .pin-slots > * + * {
   margin-left: 20px;
 }
-.no-flex-gap .pin-keypad-row > * + *,
+.no-flex-gap .pin-keypad-row > * + * {
+  margin-left: 20px;
+}
 .no-flex-gap #upNextCard > * + *,
 .no-flex-gap .up-next-prompt > * + * {
-  margin-left: 20px;
+  margin-left: 10px;
 }
 
 /* The switch runs row-reverse, so the space between its two halves is to the right of the
@@ -5629,9 +5631,9 @@ html[dir="rtl"].no-flex-gap .parental-status-row > * + *,
 html[dir="rtl"].no-flex-gap .parental-actions-row > * + *,
 html[dir="rtl"].no-flex-gap .pin-setup-row > * + * { margin-left: 0; margin-right: 16px; }
 html[dir="rtl"].no-flex-gap .pin-slots > * + * { margin-left: 0; margin-right: 20px; }
-html[dir="rtl"].no-flex-gap .pin-keypad-row > * + *,
+html[dir="rtl"].no-flex-gap .pin-keypad-row > * + * { margin-left: 0; margin-right: 20px; }
 html[dir="rtl"].no-flex-gap #upNextCard > * + *,
-html[dir="rtl"].no-flex-gap .up-next-prompt > * + * { margin-left: 0; margin-right: 20px; }
+html[dir="rtl"].no-flex-gap .up-next-prompt > * + * { margin-left: 0; margin-right: 10px; }
 
 /* =================================================== AssisTV Home Tile Grid ==== */
 .home-view {
@@ -6962,25 +6964,30 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
   }
 }
 
-/* ---- Minimalist Up Next Episode Corner Card (TICKET-2308) ------------- */
+/* ---- Minimalist Up Next Episode Corner Card (TICKET-2308, TICKET-2402) - */
 #upNextCard.up-next-prompt {
   position: fixed;
   bottom: 64px;
   right: 72px;
-  width: 480px;
-  padding: 16px;
-  background: rgba(13, 17, 23, 0.96);
-  border: 1px solid var(--line, rgba(240, 246, 252, 0.12));
-  border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+  width: 300px;
+  padding: 12px;
+  background-color: var(--over-video, rgba(10, 12, 15, 0.90));
+  border: 1px solid var(--line, rgba(76, 141, 255, 0.16));
+  border-radius: 14px;
+  box-shadow: var(--lift, 0 24px 60px rgba(0, 0, 0, 0.6));
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   z-index: 9999;
   transform: translate3d(0, 0, 0);
   box-sizing: border-box;
   animation: up-next-enter 0.3s ease-out;
+}
+
+html[dir="rtl"] #upNextCard.up-next-prompt {
+  right: auto;
+  left: 72px;
 }
 
 @keyframes up-next-enter {
@@ -6995,10 +7002,10 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
 }
 
 #upNextCard #playNowBtn {
-  width: 168px;
-  height: 94px;
-  min-width: 168px;
-  border-radius: 10px;
+  width: 96px;
+  height: 54px;
+  min-width: 96px;
+  border-radius: 8px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
@@ -7045,6 +7052,8 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
 }
 
 .up-next-ring {
+  width: 44px;
+  height: 44px;
   transform: rotate(-90deg);
 }
 
@@ -7058,7 +7067,7 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
 
 .up-next-seconds {
   position: absolute;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text, #ffffff);
@@ -7074,41 +7083,44 @@ html[dir="rtl"] .home-now-meta > * + * { margin-left: 0; margin-right: 14px; }
   text-align: left;
 }
 
+html[dir="rtl"] .up-next-meta {
+  text-align: right;
+}
+
 .up-next-eyebrow {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-2, #8b949e);
   margin-bottom: 2px;
 }
 
 .up-next-ep-meta {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--accent, #58a6ff);
   margin-bottom: 2px;
 }
 
 .up-next-video-title {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
   color: var(--text, #f0f6fc);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
 }
 
 #upNextCard #cancelNextBtn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   border-radius: 8px;
-  align-self: flex-start;
-  margin-left: auto;
+  align-self: center;
+  margin-left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
