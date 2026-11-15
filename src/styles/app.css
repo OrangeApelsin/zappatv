@@ -4389,7 +4389,7 @@ html[dir="rtl"] .pb-pill-badge {
 .subtitle-overlay {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--safe-y) + 120px);
+  bottom: var(--safe-y);
   transform: translateX(-50%);
   max-width: 80%;
   padding: var(--s1) var(--s3);
@@ -4403,6 +4403,18 @@ html[dir="rtl"] .pb-pill-badge {
   pointer-events: none;
   font-weight: 600;
   white-space: pre-wrap;
+}
+
+.subtitle-overlay.pos-bottom {
+  bottom: var(--safe-y);
+}
+
+.subtitle-overlay.pos-lower {
+  bottom: calc(var(--safe-y) + 60px);
+}
+
+.subtitle-overlay.pos-elevated {
+  bottom: calc(var(--safe-y) + 120px);
 }
 
 .subtitle-overlay.size-s {

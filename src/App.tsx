@@ -4444,7 +4444,7 @@ export default function App() {
       {/* ---- layer 2, playback information, the banner and its key guide ---------- */}
       {tuner.subtitleText && !modal && (
         <div
-          className={`subtitle-overlay size-${settings.subtitleSize} style-${settings.subtitleStyle}`}
+          className={`subtitle-overlay size-${settings.subtitleSize} style-${settings.subtitleStyle} pos-${settings.subtitlePosition}`}
           aria-live="polite"
         >
           <SubtitleRenderer text={tuner.subtitleText} />
