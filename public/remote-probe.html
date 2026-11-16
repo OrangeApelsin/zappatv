@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zappa TV transport probe</title></head>
+<body style="background:#080809;color:#fff;font:24px sans-serif;padding:40px">
+  <h1>Zappa TV transport probe</h1>
+  <p>Diagnostic page. Does not alter playlists, settings or paired devices. Test with the same HTTPS relay origin as the phone.</p>
+  <form id="probe"><label>Relay URL <input id="url" type="url" required placeholder="https://remote.example.com/"></label><button>Check HTTPS and crypto</button></form>
+  <form id="socket"><label>WebSocket URL <input id="ws" type="url" required placeholder="wss://remote.example.com/api/relay/v1/tvs/ID/ws"></label><label>One-use ticket <input id="ticket" type="password" required autocomplete="off"></label><button>Check WebSocket</button></form>
+  <button id="close" type="button">Close connection</button>
+  <pre id="result" role="status" aria-live="polite"></pre>
+  <script src="./remote-probe.js"></script>
+</body></html>

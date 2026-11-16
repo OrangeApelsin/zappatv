@@ -1,0 +1,28 @@
+{
+  "protocolVersion": 1,
+  "status": "client proposal; server implementation and hardware acceptance pending",
+  "apiBase": "api/relay/v1/",
+  "capabilities": { "protocolVersion": 1, "transports": ["websocket", "polling"] },
+  "registration": { "tvId": "opaque URL-safe identifier", "ownershipSecret": "secret returned once" },
+  "connection": { "generation": "opaque string", "credential": "short-lived connection bearer", "serverTime": 1800000000000 },
+  "socketTicket": { "ticket": "single-use ticket" },
+  "socketAuthenticate": { "type": "authenticate", "protocolVersion": 1, "ticket": "single-use ticket" },
+  "socketReady": { "type": "ready", "generation": "current generation" },
+  "pollResponse": { "messages": [] },
+  "request": { "type": "request", "id": "correlation ID", "tvId": "registered TV", "generation": "current generation", "deadline": 1800000000500, "method": "GET", "path": "/api/v1/status", "headers": {}, "body": "" },
+  "response": { "type": "response", "id": "correlation ID", "generation": "current generation", "status": 200, "contentType": "application/json; charset=utf-8", "body": "{}" },
+  "pairing": { "type": "pairing", "generation": "current generation", "expiresAt": null },
+  "heartbeat": { "type": "heartbeat", "generation": "current generation" },
+  "limits": { "requestBytes": 65536, "responseBytes": 1048576, "inFlight": 8, "pollWaitSeconds": 20, "heartbeatSeconds": 15, "leaseSeconds": 45, "keyDeliveryMs": 500, "commandDeliveryMs": 2000 },
+  "phonePath": "t/{tvId}/",
+  "notes": [
+    "All HTTP paths are relative to the configured HTTPS relay prefix.",
+    "TVs authenticate HTTP using Authorization: Bearer <ownershipSecret or connection credential>.",
+    "WebSocket uses the one-use ticket in its first frame, never the URL.",
+    "Poll and socket connections share generation fencing; fallback opens a new connection.",
+    "POST messages accepts one envelope; GET poll returns messages as an array.",
+    "Server deadlines and pairing timestamps use Unix milliseconds; connection serverTime calibrates TV clock offset.",
+    "Phone endpoints forward existing TV request bodies and bearers without changing authorization.",
+    "This contract must be reconciled and versioned in IPTV Manager before production use."
+  ]
+}
