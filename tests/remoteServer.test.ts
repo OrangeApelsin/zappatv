@@ -521,6 +521,21 @@ describe("development bridge lifecycle", () => {
 });
 
 describe("management API", () => {
+  test("a command that expires while queued does not tell the phone its credential was revoked", async () => {
+    const server = await load();
+    const session = server.createPairingSession();
+    const paired = await server.pairDevice({ secret: session.secret, name: "Phone" });
+    if (!paired.ok) throw new Error("pairing failed");
+    let checks = 0;
+    const response = await server.routeRemoteRequest({
+      method: "POST", path: "/api/v1/command",
+      headers: { authorization: `Bearer ${paired.deviceId}:${paired.credential}`, "content-type": "application/json" },
+      body: JSON.stringify({ id: "expires-in-queue", revision: 0, command: { type: "setting", key: "showClock", value: false } }),
+      canDispatch: () => ++checks === 1,
+    });
+    expect(response.status).toBe(410);
+    expect(JSON.parse(response.body)).toEqual({ error: "expired" });
+  });
   test("rejects pairing requests with unknown fields or two credentials", async () => {
     const server = await load();
     const session = server.createPairingSession();

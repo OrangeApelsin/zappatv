@@ -431,7 +431,9 @@ export async function routeRemoteRequest(request: RemoteRequest): Promise<Remote
     }
     const result = await applyRemoteCommand(input, async () =>
       await authorised(request) && (!request.canDispatch || request.canDispatch()));
-    if (!result) return json(401, { error: "unauthorisedOrExpired" });
+    if (!result) return request.canDispatch && !request.canDispatch()
+      ? json(410, { error: "expired" })
+      : json(401, { error: "unauthorised" });
     return json(result.reason === "conflict" ? 409 : result.ok ? 200 : 400, result);
   }
   return json(404, { error: "notFound" });
