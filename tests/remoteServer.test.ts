@@ -165,6 +165,31 @@ test("simulated TV onboarding requires its explicit development query", async ()
 });
 
 describe("management lifecycle", () => {
+  test("a disconnected primary interface still reaches the async private address", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    (window as unknown as { webapis: unknown }).webapis = { network: { getIp: () => "0.0.0.0" } };
+    (window as unknown as { tizen: unknown }).tizen = {
+      systeminfo: { getPropertyValue: (_property: string, success: (value: unknown) => void) => success({ ipAddress: "192.168.1.21" }) },
+    };
+    const server = await load();
+    server.startRemoteAccess();
+    await Promise.resolve();
+    expect(FakeWorker.instances[0].messages[0]).toMatchObject({ address: "192.168.1.21" });
+    delete (window as unknown as { tizen?: unknown }).tizen;
+  });
+
+  test("stop fences pending discovery and cannot start a stale worker", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("Worker", FakeWorker);
+    delete (window as unknown as { tizen?: unknown }).tizen;
+    const server = await load();
+    server.startRemoteAccess();
+    await server.stopRemoteAccess();
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(server.remoteAccessState().status).toBe("idle");
+    expect(FakeWorker.instances).toHaveLength(0);
+  });
+
   test("starts with Samsung's private address and reports listening", async () => {
     vi.stubGlobal("Worker", FakeWorker);
     (window as unknown as { webapis: unknown }).webapis = {

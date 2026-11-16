@@ -166,6 +166,9 @@ const ENGLISH = {
   "remote.starting": "Starting remote access…",
   "remote.connected": ({ name }) => `${name} connected`,
   "remote.unavailable": "Remote setup is unavailable on this network.",
+  "remote.networkAddress": "No private TV address was found. Check the network connection or configure a relay.",
+  "remote.localUnsupported": "This TV cannot host remote setup. Configure a relay to connect a phone.",
+  "remote.connectionFailed": "Remote access could not connect. Check the server and try again.",
   "remote.manualFallback": "You can still enter the playlist on the left.",
   "remote.pairedHint":
     "Authorised devices can manage playlists, settings, and playback while Zappa TV is running.",

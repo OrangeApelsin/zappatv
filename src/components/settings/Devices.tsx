@@ -96,7 +96,7 @@ export function Devices({
       {remoteAccess.status === "unavailable" && (
         <>
           <p className="field-problem" role="alert">
-            {t("remote.unavailable")}
+            {t(remoteAccess.errorKey ?? "remote.unavailable")}
           </p>
           <div className="actions device-access-actions">
             <button type="button" className="btn tonal" onClick={remoteAccess.retry}>

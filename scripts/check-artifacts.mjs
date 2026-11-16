@@ -12,6 +12,7 @@ export function checkArtifacts({ root = resolve("dist"), target = "5.5" } = {}) 
   const grammar = targetPolicy(target).package.grammar;
   root = resolve(root);
   const scripts = [];
+  const platformScripts = [];
   const check = (code, path) => {
     if (code.includes("__ZAPPA_TV_PREVIEW__"))
       throw new Error(`Production artifact contains the preview simulation: ${path}`);
@@ -38,6 +39,13 @@ export function checkArtifacts({ root = resolve("dist"), target = "5.5" } = {}) 
         continue;
       }
       const src = script.getAttribute("src");
+      // Samsung resolves this exact system resource inside a widget. It is not
+      // a packaged file; do not generalize the exception to external scripts.
+      if (src === "$WEBAPIS/webapis/webapis.js") {
+        if (platformScripts.length) throw new Error("Duplicate Samsung WebAPI loader.");
+        platformScripts.push(src);
+        continue;
+      }
       if (/^[a-z][\w+.-]*:|^[\\/]/i.test(src))
         throw new Error("Widget startup must use packaged relative script URLs.");
       const url = new URL(src, pathToFileURL(resolve(root, "index.html")));
@@ -58,7 +66,7 @@ export function checkArtifacts({ root = resolve("dist"), target = "5.5" } = {}) 
   if (workers.length !== 1) throw new Error("Expected exactly one packaged VOD worker.");
   const worker = `assets/${workers[0]}`;
   check(readFileSync(resolve(root, worker), "utf8"), worker);
-  return { target, grammar, scripts, worker };
+  return { target, grammar, scripts, platformScripts, worker };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

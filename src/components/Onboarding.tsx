@@ -25,7 +25,7 @@ import { OptionPicker } from "./OptionPicker";
 import { KeyGuide } from "./KeyGuide";
 import { InputShield } from "./InputShield";
 import type { PairingSessionView } from "../services/deviceAccess";
-import type { RemoteAccessState } from "../services/remoteServer";
+import { remotePhoneUrl, type RemoteAccessState } from "../services/remoteServer";
 
 const NO_REMOTE_ACCESS: RemoteAccessState = {
   status: "unavailable",
@@ -117,9 +117,7 @@ export function Onboarding({
   }, [source]);
 
   // Remote setup URL for phone QR pairing
-  const address = remoteAccess.address
-    ? `http://${remoteAccess.address}:${remoteAccess.port}${remoteAccess.remotePath}`
-    : "";
+  const address = remotePhoneUrl(remoteAccess);
   const setupUrl = useMemo(
     () =>
       remoteAccess.pairing && address
@@ -457,10 +455,10 @@ export function Onboarding({
                   {remoteAccess.status === "unavailable" && remoteAccess.error ? (
                     <div className="pair-unavailable-notice" style={{ marginTop: 8 }}>
                       <p style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>
-                        {t("remote.unavailable")}
+                        {t(remoteAccess.errorKey ?? "remote.unavailable")}
                       </p>
                       <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.4, marginBottom: 16 }}>
-                        Remote phone setup is not available on this TV model. Please enter your playlist using the on-screen form.
+                        {t("remote.manualFallback")}
                       </p>
                       <button
                         type="button"
@@ -514,7 +512,7 @@ export function Onboarding({
                     role="status"
                   >
                     {remoteAccess.status === "unavailable"
-                      ? t("remote.unavailable")
+                      ? t(remoteAccess.errorKey ?? "remote.unavailable")
                       : remoteAccess.connectedDevice
                         ? t("remote.connected", { name: remoteAccess.connectedDevice })
                         : remoteAccess.status === "listening"

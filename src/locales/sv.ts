@@ -157,6 +157,9 @@ export default {
   "remote.starting": "Startar fjärråtkomst…",
   "remote.connected": ({ name }) => `${name} ansluten`,
   "remote.unavailable": "Fjärrkonfiguration är inte tillgänglig på detta nätverk.",
+  "remote.networkAddress": "Ingen privat TV-adress hittades. Kontrollera nätverket eller konfigurera en reläserver.",
+  "remote.localUnsupported": "Denna TV kan inte vara värd för fjärrkonfiguration. Konfigurera en reläserver för att ansluta en telefon.",
+  "remote.connectionFailed": "Fjärråtkomst kunde inte ansluta. Kontrollera servern och försök igen.",
   "remote.manualFallback": "Du kan fortfarande ange spellistan till vänster.",
   "remote.pairedHint":
     "Auktoriserade enheter kan hantera spellistor, inställningar och uppspelning medan Zappa TV körs.",

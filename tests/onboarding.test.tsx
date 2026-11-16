@@ -186,7 +186,7 @@ test("shows graceful guidance on phone tab when remote access is unavailable", (
 
   expect(
     screen.getByText(
-      "Remote phone setup is not available on this TV model. Please enter your playlist using the on-screen form.",
+      "You can still enter the playlist on the left.",
     ),
   ).toBeTruthy();
   expect(document.querySelector("#pair-code.blank")).toBeTruthy();

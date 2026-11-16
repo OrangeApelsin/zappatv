@@ -24,6 +24,15 @@ export interface RemoteAccessState {
   pairingError: boolean;
   connectedDevice: string;
   error: string;
+  /** Canonical phone URL supplied by the transport, without a pairing secret. */
+  phoneUrl?: string;
+  errorKey?: "remote.networkAddress" | "remote.localUnsupported" | "remote.connectionFailed";
+}
+
+export function remotePhoneUrl(value: RemoteAccessState): string {
+  if (value.status !== "listening") return "";
+  return value.phoneUrl ?? (value.address
+    ? `http://${value.address}:${value.port}${value.remotePath}` : "");
 }
 
 export interface RemoteRequest {
@@ -64,6 +73,8 @@ let stopResolve: (() => void) | null = null;
 let stopTimer: number | undefined;
 let pairingTimer: number | undefined;
 let restartRequested = false;
+let networkAttempt = 0;
+let localStarting = false;
 
 function publish(change: Partial<RemoteAccessState>): void {
   state = { ...state, ...change };
@@ -150,7 +161,7 @@ export function getTvNetworkInfo(): { address: string; isPublic: boolean } {
       for (const m of checkMethods) {
         if (typeof net[m] === "function") {
           try {
-            const ip = String((net[m] as () => unknown)() ?? "").trim();
+            const ip = String((net[m] as () => unknown).call(net) ?? "").trim();
             if (ip) candidates.push(ip);
           } catch {}
         }
@@ -160,7 +171,7 @@ export function getTvNetworkInfo(): { address: string; isPublic: boolean } {
         if (isPrivateIPv4(candidate)) {
           return { address: candidate, isPublic: false };
         }
-        if (/^\d+\.\d+\.\d+\.\d+$/.test(candidate) && !candidate.startsWith("127.")) {
+        if (candidate !== "0.0.0.0" && /^\d+\.\d+\.\d+\.\d+$/.test(candidate) && !candidate.startsWith("127.")) {
           foundPublic = true;
         }
       }
@@ -182,7 +193,7 @@ export function getTvNetworkInfo(): { address: string; isPublic: boolean } {
           const ip = String(val?.ipAddress ?? val?.ip ?? "").trim();
           if (ip) {
             if (isPrivateIPv4(ip)) return { address: ip, isPublic: false };
-            if (/^\d+\.\d+\.\d+\.\d+$/.test(ip) && !ip.startsWith("127.")) {
+            if (ip !== "0.0.0.0" && /^\d+\.\d+\.\d+\.\d+$/.test(ip) && !ip.startsWith("127.")) {
               foundPublic = true;
             }
           }
@@ -217,14 +228,28 @@ export function resolveTvNetworkIpAsync(): Promise<string> {
   return new Promise((resolve) => {
     let resolved = false;
     let timer: number | undefined;
+    let peer: RTCPeerConnection | undefined;
+
+    const cleanup = () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      try { peer?.close(); } catch { /* already closed */ }
+    };
 
     const finish = (ip: string) => {
       if (!resolved && ip && isPrivateIPv4(ip)) {
         resolved = true;
-        if (timer !== undefined) window.clearTimeout(timer);
+        cleanup();
         resolve(ip);
       }
     };
+
+    timer = window.setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve(getTvNetworkIp());
+      }
+    }, 1500);
 
     // 1. Try async tizen.systeminfo
     try {
@@ -257,8 +282,9 @@ export function resolveTvNetworkIpAsync(): Promise<string> {
           ? window.RTCPeerConnection ||
             (window as unknown as Record<string, typeof RTCPeerConnection>).webkitRTCPeerConnection
           : undefined;
-      if (PeerConnection) {
+      if (PeerConnection && !resolved) {
         const pc = new PeerConnection({ iceServers: [] });
+        peer = pc;
         pc.createDataChannel("ip-check");
         pc.createOffer()
           .then((offer) => pc.setLocalDescription(offer))
@@ -278,13 +304,6 @@ export function resolveTvNetworkIpAsync(): Promise<string> {
       /* ignore */
     }
 
-    // 3. Fallback timeout
-    timer = window.setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        resolve(getTvNetworkIp());
-      }
-    }, 1500);
   });
 }
 
@@ -319,6 +338,8 @@ function publishIdle(): void {
     pairingError: false,
     connectedDevice: "",
     error: "",
+    phoneUrl: undefined,
+    errorKey: undefined,
   });
 }
 
@@ -429,6 +450,7 @@ function failWorker(reason: string): void {
     pairingError: false,
     connectedDevice: "",
     error: reason,
+    errorKey: reason.includes("socket bindings") ? "remote.localUnsupported" : "remote.connectionFailed",
   });
 }
 
@@ -530,13 +552,14 @@ export function startDevelopmentRemoteAccess(): Promise<void> {
 
 function launchWorker(address: string): void {
   if (worker) return;
-  publish({ status: "starting", address, port: PORT, remotePath: "", error: "" });
+  publish({ status: "starting", address, port: PORT, remotePath: "", error: "", errorKey: undefined });
   try {
     worker = new Worker("./wasm/management-socket.worker.js");
   } catch (error) {
     publish({
       status: "unavailable",
       error: error instanceof Error ? error.message : String(error),
+      errorKey: "remote.connectionFailed",
     });
     return;
   }
@@ -576,7 +599,7 @@ export function startRemoteAccess(): void {
     }
     return;
   }
-  if (worker) return;
+  if (worker || localStarting) return;
   if (!isWasmSupported()) {
     console.warn("[remoteServer] WebAssembly not supported; local HTTP server unavailable.");
     publish({
@@ -585,12 +608,13 @@ export function startRemoteAccess(): void {
       port: 0,
       remotePath: "",
       error: "WebAssembly is not supported on this TV model",
+      errorKey: "remote.localUnsupported",
     });
     return;
   }
   const info = getTvNetworkInfo();
   if (info.isPublic) {
-    publish({ status: "unavailable", address: "", port: 0, error: "no private TV address" });
+    publish({ status: "unavailable", address: "", port: 0, error: "no private TV address", errorKey: "remote.networkAddress" });
     return;
   }
   if (info.address && isPrivateIPv4(info.address)) {
@@ -598,18 +622,24 @@ export function startRemoteAccess(): void {
     return;
   }
 
-  publish({ status: "starting", address: "", port: PORT, remotePath: "", error: "" });
+  const attempt = ++networkAttempt;
+  localStarting = true;
+  publish({ status: "starting", address: "", port: PORT, remotePath: "", error: "", errorKey: undefined });
   void resolveTvNetworkIpAsync().then((resolvedAddress) => {
+    if (attempt !== networkAttempt) return;
+    localStarting = false;
     if (stopPromise || restartRequested || worker) return;
     if (isPrivateIPv4(resolvedAddress)) {
       launchWorker(resolvedAddress);
     } else {
-      publish({ status: "unavailable", address: "", port: 0, error: "no private TV address" });
+      publish({ status: "unavailable", address: "", port: 0, error: "no private TV address", errorKey: "remote.networkAddress" });
     }
   });
 }
 
 export function stopRemoteAccess(): Promise<void> {
+  networkAttempt += 1;
+  localStarting = false;
   developmentGeneration += 1;
   developmentStart = null;
   restartRequested = false;

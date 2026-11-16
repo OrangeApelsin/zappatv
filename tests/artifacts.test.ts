@@ -75,3 +75,17 @@ test("module startup, remote or escaping scripts and missing worker fail closed"
   rmSync(join(root, "assets/vodWorker-fixture.js"));
   expect(() => checkArtifacts({ root })).toThrow("exactly one");
 });
+
+test("only the exact Samsung system loader is exempt from packaged-file checks", () => {
+  const root = artifact("(function(){})();");
+  const entry = '<script src="./assets/main.js"></script>';
+  const loader = '<script src="$WEBAPIS/webapis/webapis.js"></script>';
+  writeFileSync(join(root, "index.html"), loader + entry);
+  expect(checkArtifacts({ root }).platformScripts).toEqual(["$WEBAPIS/webapis/webapis.js"]);
+  writeFileSync(join(root, "index.html"), loader + loader + entry);
+  expect(() => checkArtifacts({ root })).toThrow("Duplicate");
+  for (const suffix of ["?url=https://evil.test", "/../evil.js"]) {
+    writeFileSync(join(root, "index.html"), `<script src="$WEBAPIS/webapis/webapis.js${suffix}"></script>${entry}`);
+    expect(() => checkArtifacts({ root })).toThrow();
+  }
+});

@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { encode } from "uqr";
 import { useLocale } from "../hooks/useLocale";
 import type { PairingSessionView } from "../services/deviceAccess";
-import type { RemoteAccessState } from "../services/remoteServer";
+import { remotePhoneUrl, type RemoteAccessState } from "../services/remoteServer";
 
 export interface RemoteSetupProps {
   remoteAccess: RemoteAccessState;
@@ -40,9 +40,7 @@ export function RemoteSetup({
     onOpenPairing,
   ]);
 
-  const address = remoteAccess.address
-    ? `http://${remoteAccess.address}:${remoteAccess.port}${remoteAccess.remotePath}`
-    : "";
+  const address = remotePhoneUrl(remoteAccess);
   const setupUrl =
     remoteAccess.pairing && address
       ? `${address}#pair=${encodeURIComponent(remoteAccess.pairing.secret)}`
@@ -62,7 +60,7 @@ export function RemoteSetup({
   const status = remoteAccess.connectedDevice
     ? t("remote.connected", { name: remoteAccess.connectedDevice })
     : remoteAccess.status === "unavailable"
-      ? t("remote.unavailable")
+      ? t(remoteAccess.errorKey ?? "remote.unavailable")
       : remoteAccess.status === "listening"
         ? t("remote.waiting")
         : t("remote.starting");
@@ -90,7 +88,7 @@ export function RemoteSetup({
           {failed
             ? t("remote.pairingFailed")
             : unavailable
-              ? t("remote.unavailable")
+              ? t(remoteAccess.errorKey ?? "remote.unavailable")
               : t("remote.starting")}
         </p>
         {failed && onOpenPairing && (
