@@ -160,6 +160,11 @@ export default {
   "remote.networkAddress": "Ingen privat TV-adress hittades. Kontrollera nätverket eller konfigurera en reläserver.",
   "remote.localUnsupported": "Denna TV kan inte vara värd för fjärrkonfiguration. Konfigurera en reläserver för att ansluta en telefon.",
   "remote.connectionFailed": "Fjärråtkomst kunde inte ansluta. Kontrollera servern och försök igen.",
+  "remote.relayInvalid": "Ange en HTTPS-adress till reläservern utan inloggning, frågesträng eller fragment.",
+  "remote.relayVersion": "Servern stöder inte det fjärrprotokoll som krävs.",
+  "remote.relayIdentity": "Reläservern nekade TV:ns inloggning. Kontrollera registreringen på servern.",
+  "remote.relayStorage": "TV:n kunde inte spara reläinställningarna. Kontrollera lagringsutrymmet.",
+  "remote.relayOffline": "Reläservern är inte tillgänglig. Fjärråtkomst återansluter automatiskt.",
   "remote.manualFallback": "Du kan fortfarande ange spellistan till vänster.",
   "remote.pairedHint":
     "Auktoriserade enheter kan hantera spellistor, inställningar och uppspelning medan Zappa TV körs.",

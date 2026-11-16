@@ -30,6 +30,23 @@ export function useRemoteAccess(enabled: boolean, development = false): RemoteAc
     };
   }, [enabled, development]);
 
+  useEffect(() => {
+    if (!enabled || development) return;
+    const visibility = () => {
+      if (document.hidden) void stopRemoteAccess();
+      else startRemoteAccess();
+    };
+    const stop = () => { void stopRemoteAccess(); };
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("pagehide", stop);
+    window.addEventListener("pageshow", visibility);
+    return () => {
+      document.removeEventListener("visibilitychange", visibility);
+      window.removeEventListener("pagehide", stop);
+      window.removeEventListener("pageshow", visibility);
+    };
+  }, [enabled, development]);
+
   const retry = useCallback(() => {
     void stopRemoteAccess().then(() => {
       if (development) void startDevelopmentRemoteAccess();

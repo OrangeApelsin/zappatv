@@ -651,8 +651,13 @@ async function applyRemoteCommandNow(request: CommandRequest): Promise<CommandRe
   return remember(request.id, result(true));
 }
 
-export function applyRemoteCommand(request: CommandRequest): Promise<CommandResult> {
-  const running = commandQueue.then(() => applyRemoteCommandNow(request));
+export function applyRemoteCommand(request: CommandRequest): Promise<CommandResult>;
+export function applyRemoteCommand(request: CommandRequest, canExecute: () => Promise<boolean>): Promise<CommandResult | null>;
+export function applyRemoteCommand(request: CommandRequest, canExecute?: () => Promise<boolean>): Promise<CommandResult | null> {
+  const running = commandQueue.then(async () => {
+    if (canExecute && !await canExecute()) return null;
+    return applyRemoteCommandNow(request);
+  });
   commandQueue = running.then(
     () => undefined,
     () => undefined,

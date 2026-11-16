@@ -63,6 +63,22 @@ beforeEach(() => {
 });
 
 describe("remote command parsing", () => {
+  test("queued commands recheck authorization before changing state", async () => {
+    const { applyRemoteCommand, remoteSnapshot, useSettings } = await load();
+    const before = useSettings.getState().showClock;
+    let release: (allowed: boolean) => void = () => {};
+    const waiting = new Promise<boolean>((resolve) => { release = resolve; });
+    const one = applyRemoteCommand({ id: "guard-one", revision: remoteSnapshot().revision,
+      command: { type: "setting", key: "showClock", value: !before } }, () => waiting);
+    let allowed = true;
+    const two = applyRemoteCommand({ id: "guard-two", revision: remoteSnapshot().revision,
+      command: { type: "setting", key: "showClock", value: !before } }, async () => allowed);
+    allowed = false;
+    release(false);
+    expect(await one).toBeNull();
+    expect(await two).toBeNull();
+    expect(useSettings.getState().showClock).toBe(before);
+  });
   test("accepts every ordinary setting with the correct value type", async () => {
     const { parseRemoteCommand } = await load();
     const commands = [

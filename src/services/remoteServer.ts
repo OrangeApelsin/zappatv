@@ -8,6 +8,7 @@ import {
 } from "./deviceAccess";
 import { applyRemoteCommand, remoteSnapshot, type CommandRequest } from "./remoteProtocol";
 import { isWasmSupported } from "./wasm";
+import { configuredRelayUrl, RemoteRelayClient, type RelayError } from "./remoteRelay";
 
 export { isWasmSupported };
 
@@ -26,7 +27,7 @@ export interface RemoteAccessState {
   error: string;
   /** Canonical phone URL supplied by the transport, without a pairing secret. */
   phoneUrl?: string;
-  errorKey?: "remote.networkAddress" | "remote.localUnsupported" | "remote.connectionFailed";
+  errorKey?: "remote.networkAddress" | "remote.localUnsupported" | "remote.connectionFailed" | RelayError;
 }
 
 export function remotePhoneUrl(value: RemoteAccessState): string {
@@ -40,6 +41,8 @@ export interface RemoteRequest {
   path: string;
   headers: Record<string, string>;
   body: string;
+  /** Internal generation/deadline guard, never read from a wire envelope. */
+  canDispatch?: () => boolean;
 }
 
 export interface RemoteResponse {
@@ -75,6 +78,7 @@ let pairingTimer: number | undefined;
 let restartRequested = false;
 let networkAttempt = 0;
 let localStarting = false;
+let relay: RemoteRelayClient | null = null;
 
 function publish(change: Partial<RemoteAccessState>): void {
   state = { ...state, ...change };
@@ -326,6 +330,7 @@ function clearPairing(): void {
   if (pairingTimer !== undefined) window.clearTimeout(pairingTimer);
   pairingTimer = undefined;
   clearPairingSession();
+  relay?.pairing(null);
 }
 
 function publishIdle(): void {
@@ -354,10 +359,12 @@ export function openPairing(): PairingSessionView | null {
   const pairing = createPairingSession();
   pairingTimer = window.setTimeout(() => cancelPairing(true), pairing.expiresAt - Date.now());
   publish({ pairing, pairingError: false, connectedDevice: "" });
+  relay?.pairing(pairing.expiresAt);
   return pairing;
 }
 
 export async function routeRemoteRequest(request: RemoteRequest): Promise<RemoteResponse> {
+  if (request.canDispatch && !request.canDispatch()) return json(410, { error: "expired" });
   if (new TextEncoder().encode(request.body).length > BODY_MAX) {
     return json(413, { error: "payloadTooLarge" });
   }
@@ -422,7 +429,9 @@ export async function routeRemoteRequest(request: RemoteRequest): Promise<Remote
     ) {
       return json(400, { error: "invalidRequest" });
     }
-    const result = await applyRemoteCommand(input);
+    const result = await applyRemoteCommand(input, async () =>
+      await authorised(request) && (!request.canDispatch || request.canDispatch()));
+    if (!result) return json(401, { error: "unauthorisedOrExpired" });
     return json(result.reason === "conflict" ? 409 : result.ok ? 200 : 400, result);
   }
   return json(404, { error: "notFound" });
@@ -600,6 +609,24 @@ export function startRemoteAccess(): void {
     return;
   }
   if (worker || localStarting) return;
+  const url = configuredRelayUrl();
+  if (url) {
+    if (relay) return;
+    try {
+      relay = new RemoteRelayClient(url, routeSafely, (status, phoneUrl, errorKey) => {
+        if (status !== "listening") clearPairing();
+        publish({ status, phoneUrl, address: "", port: 0, remotePath: "",
+          pairing: status === "listening" ? state.pairing : null,
+          connectedDevice: status === "listening" ? state.connectedDevice : "",
+          errorKey, error: errorKey ?? "" });
+      });
+      relay.start();
+    } catch {
+      relay = null;
+      publish({ status: "unavailable", phoneUrl: "", error: "invalid relay URL", errorKey: "remote.relayInvalid" });
+    }
+    return;
+  }
   if (!isWasmSupported()) {
     console.warn("[remoteServer] WebAssembly not supported; local HTTP server unavailable.");
     publish({
@@ -640,6 +667,8 @@ export function startRemoteAccess(): void {
 export function stopRemoteAccess(): Promise<void> {
   networkAttempt += 1;
   localStarting = false;
+  relay?.stop();
+  relay = null;
   developmentGeneration += 1;
   developmentStart = null;
   restartRequested = false;

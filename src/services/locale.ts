@@ -169,6 +169,11 @@ const ENGLISH = {
   "remote.networkAddress": "No private TV address was found. Check the network connection or configure a relay.",
   "remote.localUnsupported": "This TV cannot host remote setup. Configure a relay to connect a phone.",
   "remote.connectionFailed": "Remote access could not connect. Check the server and try again.",
+  "remote.relayInvalid": "Enter an HTTPS relay URL without credentials, query or fragment.",
+  "remote.relayVersion": "This server does not support the required remote protocol.",
+  "remote.relayIdentity": "The relay rejected this TV's credentials. Check the server registration.",
+  "remote.relayStorage": "The TV could not save its relay configuration. Check available storage.",
+  "remote.relayOffline": "The relay is unavailable. Remote access will reconnect automatically.",
   "remote.manualFallback": "You can still enter the playlist on the left.",
   "remote.pairedHint":
     "Authorised devices can manage playlists, settings, and playback while Zappa TV is running.",
