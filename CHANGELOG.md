@@ -2,6 +2,23 @@
 
 Notable changes, newest first, in the format of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-11-16
+
+### Added
+
+- Opt-in HTTPS relay setup and Smart Remote through IPTV Manager, with native outbound WebSocket and bounded polling fallback on Tizen 5.0+.
+- Relay URL configuration, QR/manual pairing, localized connection diagnostics, retry and cancellation in English, Swedish and Arabic.
+- Persistent relay ownership, suspend/resume handling, fenced reconnects and command expiry without replaying stale input.
+- Versioned IPTV Manager relay contract and a real HTTPS packaged-client integration check using disposable registrations.
+
+### Fixed
+
+- Restore the Samsung WebAPI startup loader and handle unavailable network interfaces without ending discovery prematurely.
+- Preserve phone credentials when a queued command expires and restore focus when cancelling pairing.
+- Account for connection round-trip uncertainty when checking relay deadlines, while expiring dispatch conservatively.
+
+Candidate only until owner acceptance of the exact Tizen 5 package. Packages retain application identity and data and remain unsigned for Apps2Samsung.
+
 ## [1.1] - 2026-11-15
 
 ### Added
