@@ -7,6 +7,7 @@ let sequence = 0;
 let wsEnabled = true;
 let rejectOwnership = false;
 let holdCapabilities = false;
+let expirePoll = false;
 class Xhr {
   static all: Xhr[] = [];
   method = ""; url = ""; body: unknown; headers: Record<string, string> = {};
@@ -25,7 +26,10 @@ class Xhr {
       if (rejectOwnership) this.status = 401;
       result = { generation: `g${++sequence}`, credential, serverTime: Date.now() };
     } else if (this.url.endsWith("/socket-ticket")) result = { ticket: "one-time-ticket" };
-    else if (this.url.endsWith("/poll")) result = { messages: [] };
+    else if (this.url.endsWith("/poll")) {
+      if (expirePoll) { this.status = 401; expirePoll = false; }
+      result = { messages: [] };
+    }
     this.responseText = JSON.stringify(result);
     queueMicrotask(() => { if (!this.aborted) this.onload(); });
   }
@@ -65,7 +69,7 @@ async function listening() {
 beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(1800000000000); localStorage.clear();
   vi.stubGlobal("XMLHttpRequest", Xhr); vi.stubGlobal("WebSocket", Socket);
-  sequence = 0; Xhr.all = []; Socket.all = []; wsEnabled = true; rejectOwnership = false; holdCapabilities = false;
+  sequence = 0; Xhr.all = []; Socket.all = []; wsEnabled = true; rejectOwnership = false; holdCapabilities = false; expirePoll = false;
 });
 afterEach(() => { for (const value of clients.splice(0)) value.stop(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -162,6 +166,16 @@ test("rejected ownership fails closed without registering a replacement TV", asy
   wsEnabled = false; const { value, change } = client(); value.start(); await flush(); value.stop();
   rejectOwnership = true; value.start(); await flush(); await vi.advanceTimersByTimeAsync(60000);
   expect(change).toHaveBeenLastCalledWith("unavailable", "", "remote.relayIdentity");
+  expect(Xhr.all.filter((x) => x.url.endsWith("/tvs"))).toHaveLength(1);
+});
+
+test("an expired polling credential renews the connection using the original owner", async () => {
+  wsEnabled = false;
+  const { value, change } = client(); value.start(); await flush();
+  expirePoll = true;
+  await vi.advanceTimersByTimeAsync(4700); await flush();
+  expect(sequence).toBe(2);
+  expect(change).toHaveBeenLastCalledWith("listening", "https://relay.test/prefix/t/tv-one/");
   expect(Xhr.all.filter((x) => x.url.endsWith("/tvs"))).toHaveLength(1);
 });
 

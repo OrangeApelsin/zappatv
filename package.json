@@ -37,6 +37,7 @@
     "tv:engines": "node scripts/tv/engine-parity.mjs",
     "tv:budget": "node scripts/tv/sim.mjs --floor --bench --budget",
     "tv:on-set": "node scripts/tv/on-set.mjs",
+    "tv:remote": "node scripts/tv/remote-relay-smoke.mjs",
     "wasm:check": "node scripts/wasm-check.mjs",
     "wasm:sums": "node scripts/wasm-check.mjs --write",
     "store:assets": "node scripts/store-assets.mjs",

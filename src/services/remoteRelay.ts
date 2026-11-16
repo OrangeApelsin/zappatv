@@ -127,7 +127,14 @@ export class RemoteRelayClient {
       xhr.onload = () => {
         done();
         if (xhr.status < 200 || xhr.status >= 300) {
-          reject(new RelayFailure(xhr.status === 401 || xhr.status === 403 ? "remote.relayIdentity" : "remote.relayOffline", xhr.status === 401 || xhr.status === 403));
+          if (path === "capabilities" && [400, 404, 405, 426].includes(xhr.status)) {
+            reject(new RelayFailure("remote.relayVersion", true));
+            return;
+          }
+          // An expired connection credential is renewable using the durable
+          // owner secret. Only rejection of that owner proof is terminal.
+          const ownershipRejected = path.endsWith("/connections") && (xhr.status === 401 || xhr.status === 403);
+          reject(new RelayFailure(ownershipRejected ? "remote.relayIdentity" : "remote.relayOffline", ownershipRejected));
           return;
         }
         try {
