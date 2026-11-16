@@ -8,6 +8,7 @@ let wsEnabled = true;
 let rejectOwnership = false;
 let holdCapabilities = false;
 let expirePoll = false;
+let connectionDelay = 0;
 class Xhr {
   static all: Xhr[] = [];
   method = ""; url = ""; body: unknown; headers: Record<string, string> = {};
@@ -31,7 +32,9 @@ class Xhr {
       result = { messages: [] };
     }
     this.responseText = JSON.stringify(result);
-    queueMicrotask(() => { if (!this.aborted) this.onload(); });
+    const complete = () => { if (!this.aborted) this.onload(); };
+    if (connectionDelay && this.url.endsWith("/connections")) setTimeout(complete, connectionDelay);
+    else queueMicrotask(complete);
   }
   abort() { this.aborted = true; this.onabort(); }
 }
@@ -70,6 +73,7 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(1800000000000); localStorage.clear();
   vi.stubGlobal("XMLHttpRequest", Xhr); vi.stubGlobal("WebSocket", Socket);
   sequence = 0; Xhr.all = []; Socket.all = []; wsEnabled = true; rejectOwnership = false; holdCapabilities = false; expirePoll = false;
+  connectionDelay = 0;
 });
 afterEach(() => { for (const value of clients.splice(0)) value.stop(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -145,6 +149,22 @@ test("expired, wrong-TV, stale-generation, oversized and arbitrary-path messages
   for (const extra of [{ deadline: Date.now() - 1 }, { tvId: "other" }, { generation: "old" },
     { path: "/admin" }, { body: "x".repeat(65537) }, { deadline: Date.now() + 30000 }]) socket.emit(envelope(extra));
   await flush(); expect(route).not.toHaveBeenCalled();
+});
+
+test("connection latency allows valid server deadlines without extending dispatch expiry", async () => {
+  connectionDelay = 40;
+  const { value, route } = client(); value.start(); await flush();
+  await vi.advanceTimersByTimeAsync(40); await flush();
+  const socket = Socket.all[0]; socket.open(); socket.emit({ type: "ready", generation: "g1" });
+  socket.emit(envelope({ id: "setting", deadline: Date.now() + 2000 }));
+  socket.emit(envelope({ id: "key", deadline: Date.now() + 500, path: "/api/v1/command", method: "POST", body: JSON.stringify({ command: { type: "remote.key", code: 38 } }) }));
+  socket.emit(envelope({ id: "expired", deadline: Date.now() - 1 }));
+  socket.emit(envelope({ id: "future", deadline: Date.now() + 30000 }));
+  await flush(); expect(route).toHaveBeenCalledTimes(2);
+  const request = route.mock.calls[1]?.[0] as unknown as { canDispatch: () => boolean };
+  expect(request.canDispatch()).toBe(true);
+  await vi.advanceTimersByTimeAsync(501);
+  expect(request.canDispatch()).toBe(false);
 });
 
 test("duplicate envelopes execute once and responses use the live generation", async () => {

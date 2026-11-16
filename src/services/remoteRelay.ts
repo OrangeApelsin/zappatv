@@ -50,6 +50,7 @@ export class RemoteRelayClient {
   private credential = "";
   private owner: Owner | null = null;
   private clockOffset = 0;
+  private clockUncertainty = 0;
   private ready = false;
   private polling = false;
   private failures = 0;
@@ -181,6 +182,7 @@ export class RemoteRelayClient {
           throw new RelayFailure("remote.relayStorage", true);
         }
       }
+      const connectionStarted = Date.now();
       const connection = await this.http(`tvs/${this.owner.tvId}/connections`, "POST",
         { protocolVersion: 1 }, this.owner.ownershipSecret);
       if (!this.current(epoch)) return;
@@ -192,6 +194,9 @@ export class RemoteRelayClient {
       this.generation = connection.generation;
       this.credential = connection.credential;
       this.clockOffset = connection.serverTime - Date.now();
+      // serverTime is sampled before the response reaches us. Bound that
+      // uncertainty by the connection round trip instead of treating it as zero.
+      this.clockUncertainty = Math.max(0, Date.now() - connectionStarted);
       if (!this.polling && capabilities.transports.includes("websocket") && typeof WebSocket !== "undefined") {
         await this.openSocket(epoch);
       } else {
@@ -287,8 +292,9 @@ export class RemoteRelayClient {
       typeof value.id !== "string" || !ID.test(value.id) ||
       typeof value.deadline !== "number" || !Number.isFinite(value.deadline)) return;
     const now = Date.now() + this.clockOffset;
-    const valid = () => this.current(epoch) && Date.now() + this.clockOffset <= (value.deadline as number);
-    if (!valid() || value.deadline > now + 2000 || this.inFlight.size >= 8 || this.inFlight.has(value.id)) return;
+    // Use the earliest possible expiry; calibration must never extend execution.
+    const valid = () => this.current(epoch) && Date.now() + this.clockOffset + this.clockUncertainty <= (value.deadline as number);
+    if (!valid() || value.deadline > now + 2000 + this.clockUncertainty || this.inFlight.size >= 8 || this.inFlight.has(value.id)) return;
     if ((value.method !== "GET" && value.method !== "POST") || typeof value.path !== "string" ||
       !["/api/v1/status", "/api/v1/pair", "/api/v1/state", "/api/v1/command"].includes(value.path) ||
       typeof value.body !== "string" || bytes(value.body) > 65536 || !object(value.headers)) return;
@@ -301,7 +307,7 @@ export class RemoteRelayClient {
     try {
       if (value.path === "/api/v1/command") {
         const command = JSON.parse(value.body)?.command;
-        if ((command?.type === "remote.key" || command?.type === "remote.action") && value.deadline > now + 500) return;
+        if ((command?.type === "remote.key" || command?.type === "remote.action") && value.deadline > now + 500 + this.clockUncertainty) return;
       }
     } catch { return; }
     for (const [id, expiry] of this.seen) if (expiry < now) this.seen.delete(id);

@@ -150,6 +150,18 @@ jobs:
           node scripts/tv/candidate-gate.mjs --target=5.0 --mode=startup
           node scripts/tv/candidate-gate.mjs --target=5.5 --mode=startup
 
+      - name: Verify packaged relay pairing and commands on both priority engines
+        run: |
+          export LD_LIBRARY_PATH="$PWD/build/tv-runtime/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          VERSION=$(node -p "require('./package.json').version")
+          python3 scripts/extract-widget.py "build/zappa-$VERSION-tizen5.wgt" build/relay-widget-5.0
+          python3 scripts/extract-widget.py "build/zappa-$VERSION.wgt" build/relay-widget-5.5
+          for target in 5.0 5.5; do
+            for locale in en sv ar; do
+              xvfb-run -a node scripts/tv/remote-relay-smoke.mjs --dir=build/relay-widget-$target --target=$target --engine=$target --locale=$locale
+            done
+          done
+
       - name: Retain gate evidence (including failed engine results)
         if: always()
         uses: ./.gitea/actions/retain-artifacts

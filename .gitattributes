@@ -6,3 +6,6 @@ public/wasm/manifest-socket.wasm binary
 # The two shell scripts run on a television developer's machine over sdb, so they must keep unix line
 # endings whatever a contributor's editor prefers.
 *.sh text eol=lf
+
+# Contract receipts hash canonical LF bytes on Windows and CI.
+contracts/*.json text eol=lf

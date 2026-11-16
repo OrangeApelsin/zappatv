@@ -1,19 +1,82 @@
 {
   "protocolVersion": 1,
-  "status": "client proposal; server implementation and hardware acceptance pending",
+  "status": "server contract v1; physical TV acceptance pending",
   "apiBase": "api/relay/v1/",
-  "capabilities": { "protocolVersion": 1, "transports": ["websocket", "polling"] },
-  "registration": { "tvId": "opaque URL-safe identifier", "ownershipSecret": "secret returned once" },
-  "connection": { "generation": "opaque string", "credential": "short-lived connection bearer", "serverTime": 1800000000000 },
-  "socketTicket": { "ticket": "single-use ticket" },
-  "socketAuthenticate": { "type": "authenticate", "protocolVersion": 1, "ticket": "single-use ticket" },
-  "socketReady": { "type": "ready", "generation": "current generation" },
-  "pollResponse": { "messages": [] },
-  "request": { "type": "request", "id": "correlation ID", "tvId": "registered TV", "generation": "current generation", "deadline": 1800000000500, "method": "GET", "path": "/api/v1/status", "headers": {}, "body": "" },
-  "response": { "type": "response", "id": "correlation ID", "generation": "current generation", "status": 200, "contentType": "application/json; charset=utf-8", "body": "{}" },
-  "pairing": { "type": "pairing", "generation": "current generation", "expiresAt": null },
-  "heartbeat": { "type": "heartbeat", "generation": "current generation" },
-  "limits": { "requestBytes": 65536, "responseBytes": 1048576, "inFlight": 8, "pollWaitSeconds": 20, "heartbeatSeconds": 15, "leaseSeconds": 45, "keyDeliveryMs": 500, "commandDeliveryMs": 2000 },
+  "capabilities": {
+    "protocolVersion": 1,
+    "transports": [
+      "websocket",
+      "polling"
+    ]
+  },
+  "registration": {
+    "tvId": "tv_example_1",
+    "ownershipSecret": "secret returned once"
+  },
+  "connection": {
+    "generation": "generation_example_1",
+    "credential": "short-lived connection bearer",
+    "serverTime": 1800000000000
+  },
+  "socketTicket": {
+    "ticket": "single-use ticket"
+  },
+  "socketAuthenticate": {
+    "type": "authenticate",
+    "protocolVersion": 1,
+    "ticket": "single-use ticket"
+  },
+  "socketReady": {
+    "type": "ready",
+    "generation": "generation_example_1"
+  },
+  "pollResponse": {
+    "messages": []
+  },
+  "request": {
+    "type": "request",
+    "id": "correlation_example_1",
+    "tvId": "tv_example_1",
+    "generation": "generation_example_1",
+    "deadline": 1800000000500,
+    "method": "GET",
+    "path": "/api/v1/status",
+    "headers": {},
+    "body": ""
+  },
+  "response": {
+    "type": "response",
+    "id": "correlation_example_1",
+    "generation": "generation_example_1",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{}"
+  },
+  "pairing": {
+    "type": "pairing",
+    "generation": "generation_example_1",
+    "expiresAt": null
+  },
+  "heartbeat": {
+    "type": "heartbeat",
+    "generation": "generation_example_1"
+  },
+  "limits": {
+    "requestBytes": 65536,
+    "responseBytes": 1048576,
+    "inFlight": 8,
+    "pollWaitSeconds": 20,
+    "heartbeatSeconds": 15,
+    "leaseSeconds": 45,
+    "keyDeliveryMs": 500,
+    "commandDeliveryMs": 2000,
+    "perPhoneInFlight": 2,
+    "queueDepth": 32,
+    "responseWaitSeconds": 30,
+    "socketTicketSeconds": 30,
+    "socketAuthSeconds": 5,
+    "maxNesting": 16
+  },
   "phonePath": "t/{tvId}/",
   "notes": [
     "All HTTP paths are relative to the configured HTTPS relay prefix.",
@@ -23,6 +86,98 @@
     "POST messages accepts one envelope; GET poll returns messages as an array.",
     "Server deadlines and pairing timestamps use Unix milliseconds; connection serverTime calibrates TV clock offset.",
     "Phone endpoints forward existing TV request bodies and bearers without changing authorization.",
-    "This contract must be reconciled and versioned in IPTV Manager before production use."
-  ]
+    "IPTV Manager owns this versioned contract; both source commits are recorded in handoff."
+  ],
+  "handoff": {
+    "repository": "https://git.halvmj.uk/dany/zappatv.git",
+    "clientCommit": "6c34deb8617cdd5023dd54681c8701ef45cdef61",
+    "iptvBaseCommit": "e42fa7ff25314fb2aa32a58a5dbeaee332e29a95",
+    "suppliedRepository": "https://git.halvmj.uk/dany/zappa2.git",
+    "suppliedHead": "9cbb2c99a94c5bb3af4492ea3c6af61610fd860d",
+    "selection": "Owner approved local implemented Epic 25 client; supplied repository lacks relay client.",
+    "sourceHashes": {
+      "contracts/remote-relay-v1.json": "9c661fa82de0270b3e262628b7d84dc8dd35d25e5a06c16babda59d895a14a69",
+      "src/services/remoteRelay.ts": "df0fcd2b17e1724164fb176be4e76db689008e07b1d6db6811760b2cb47d6b72",
+      "src/services/remoteProtocol.ts": "a93fe195d890ababd3c22f8b5d50cdeeb2a27acea20a444b7a9eacb7479360ef"
+    }
+  },
+  "operations": {
+    "GET": [
+      "capabilities",
+      "tvs/{tvId}/ws",
+      "tvs/{tvId}/poll"
+    ],
+    "POST": [
+      "tvs",
+      "tvs/{tvId}/connections",
+      "tvs/{tvId}/socket-ticket",
+      "tvs/{tvId}/messages",
+      "tvs/{tvId}/rotate",
+      "tvs/{tvId}/retire"
+    ]
+  },
+  "phoneOperations": {
+    "status": "GET",
+    "pair": "POST",
+    "state": "GET",
+    "command": "POST"
+  },
+  "authentication": {
+    "register": "public; shared IP/global bootstrap rate limits",
+    "connections": "durable ownership bearer",
+    "rotate": "durable ownership bearer; returns replacement once",
+    "retire": "durable ownership bearer; permanently retires ID",
+    "socket-ticket": "connection bearer; one use within 30 seconds",
+    "ws": "authenticate frame within five seconds",
+    "poll": "connection bearer; one outstanding reader",
+    "messages": "connection bearer AND matching generation",
+    "phone": "TV-issued deviceId:credential bearer on protected operations; TV validates every request"
+  },
+  "errors": {
+    "400": "invalid fields/JSON/protocol",
+    "401": "invalid credential/ticket; phone 401 preserved from TV",
+    "403": "origin/host policy",
+    "409": "generation conflict/already reading/revision conflict",
+    "410": "delivery expired or retired TV",
+    "413": "encoded/decoded body too large",
+    "429": "rate/admission/queue limit",
+    "503": "TV offline or relay dependency unavailable",
+    "504": "outcome unknown after delivery; refresh state before retry"
+  },
+  "ownershipRotation": {
+    "request": {},
+    "response": {
+      "tvId": "tv_example_1",
+      "ownershipSecret": "replacement returned once"
+    },
+    "semantics": "invalidate old connections atomically; TV must save replacement; lost response requires operator recovery, never anonymous ID takeover"
+  },
+  "retirement": {
+    "request": {},
+    "response": {
+      "ok": true
+    },
+    "semantics": "retired IDs remain reserved; old owner cannot reconnect"
+  },
+  "supportedTVSettings": {
+    "locale": [
+      "system",
+      "en",
+      "sv",
+      "ar"
+    ],
+    "fontSizeId": [
+      "s",
+      "m",
+      "l",
+      "xl"
+    ],
+    "aspectId": [
+      "original",
+      "auto",
+      "fill",
+      "fit",
+      "stretch"
+    ]
+  }
 }

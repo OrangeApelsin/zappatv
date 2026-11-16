@@ -27,7 +27,7 @@ test("save normalizes prefixes, reports success and leaves existing TV data unto
   fireEvent.submit(input.closest("form") as HTMLFormElement);
   await waitFor(() => expect(screen.getByRole("status").textContent).toContain("saved"));
   expect(save).toHaveBeenCalledWith("https://relay.test/prefix/");
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Save" })));
   expect(localStorage.getItem("openiptv.devices")).toBe("retained-devices");
 });
 
