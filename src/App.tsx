@@ -5063,6 +5063,10 @@ export default function App() {
           onExit={exitApp}
           remoteAccess={remoteAccess}
           onOpenPairing={remoteAccess.openPairing}
+          onCancelPairing={remoteAccess.cancelPairing}
+          onRetry={remoteAccess.retry}
+          relayUrl={remoteAccess.relayUrl}
+          onConfigureRelay={remoteAccess.configureRelay}
           showRemoteSetup={remoteAccessSupported}
         />
       )}

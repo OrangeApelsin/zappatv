@@ -165,6 +165,10 @@ export default {
   "remote.relayIdentity": "Reläservern nekade TV:ns inloggning. Kontrollera registreringen på servern.",
   "remote.relayStorage": "TV:n kunde inte spara reläinställningarna. Kontrollera lagringsutrymmet.",
   "remote.relayOffline": "Reläservern är inte tillgänglig. Fjärråtkomst återansluter automatiskt.",
+  "remote.relayUrl": "Adress till fjärrserver (HTTPS)",
+  "remote.relayHint": "Ange adressen till din fjärrserver. Serverstödet måste installeras separat. Lämna tomt för att använda TV:ns lokala server när den är tillgänglig.",
+  "remote.relayTrust": "Använd en reläserver du litar på: den hanterar inloggningsuppgifter för spellistor. Ett avbrott stoppar inte TV-uppspelning eller den fysiska fjärrkontrollen.",
+  "remote.relaySaved": "Serveradressen sparades. Kontrollera anslutningen innan du parkopplar.",
   "remote.manualFallback": "Du kan fortfarande ange spellistan till vänster.",
   "remote.pairedHint":
     "Auktoriserade enheter kan hantera spellistor, inställningar och uppspelning medan Zappa TV körs.",

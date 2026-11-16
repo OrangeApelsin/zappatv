@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { configuredRelayUrl, saveRelayUrl } from "../services/remoteRelay";
 import type { PairingSessionView } from "../services/deviceAccess";
 import {
   cancelPairing,
@@ -15,26 +16,38 @@ export type RemoteAccessControl = RemoteAccessState & {
   openPairing: () => PairingSessionView | null;
   cancelPairing: () => void;
   retry: () => void;
+  relayUrl?: string;
+  configureRelay?: (url: string) => Promise<void>;
 };
 
 export function useRemoteAccess(enabled: boolean, development = false): RemoteAccessControl {
   const [state, setState] = useState(remoteAccessState);
+  const [relayUrl, setRelayUrl] = useState(configuredRelayUrl);
+  const lifecycle = useRef(0);
+  const active = useRef(enabled);
+  active.current = enabled;
+
+  const begin = useCallback(() => {
+    if (development && !configuredRelayUrl()) void startDevelopmentRemoteAccess();
+    else startRemoteAccess();
+  }, [development]);
 
   useEffect(() => subscribeRemoteAccess(setState), []);
   useEffect(() => {
-    if (enabled && development) void startDevelopmentRemoteAccess();
-    else if (enabled) startRemoteAccess();
+    lifecycle.current += 1;
+    if (enabled && !document.hidden) begin();
     else void stopRemoteAccess();
     return () => {
+      lifecycle.current += 1;
       if (enabled) void stopRemoteAccess();
     };
-  }, [enabled, development]);
+  }, [enabled, begin]);
 
   useEffect(() => {
-    if (!enabled || development) return;
+    if (!enabled) return;
     const visibility = () => {
       if (document.hidden) void stopRemoteAccess();
-      else startRemoteAccess();
+      else begin();
     };
     const stop = () => { void stopRemoteAccess(); };
     document.addEventListener("visibilitychange", visibility);
@@ -45,14 +58,22 @@ export function useRemoteAccess(enabled: boolean, development = false): RemoteAc
       window.removeEventListener("pagehide", stop);
       window.removeEventListener("pageshow", visibility);
     };
-  }, [enabled, development]);
+  }, [enabled, begin]);
 
   const retry = useCallback(() => {
+    const attempt = ++lifecycle.current;
     void stopRemoteAccess().then(() => {
-      if (development) void startDevelopmentRemoteAccess();
-      else startRemoteAccess();
+      if (attempt === lifecycle.current && active.current && !document.hidden) begin();
     });
-  }, [development]);
+  }, [begin]);
 
-  return { ...state, openPairing, cancelPairing, retry };
+  const configureRelay = useCallback(async (url: string) => {
+    saveRelayUrl(url);
+    setRelayUrl(configuredRelayUrl());
+    const attempt = ++lifecycle.current;
+    await stopRemoteAccess();
+    if (attempt === lifecycle.current && active.current && !document.hidden) begin();
+  }, [begin]);
+
+  return { ...state, openPairing, cancelPairing, retry, relayUrl, configureRelay };
 }

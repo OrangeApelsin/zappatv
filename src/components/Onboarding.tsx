@@ -24,6 +24,7 @@ import { LanguagePicker } from "./LanguagePicker";
 import { OptionPicker } from "./OptionPicker";
 import { KeyGuide } from "./KeyGuide";
 import { InputShield } from "./InputShield";
+import { RelayConfiguration } from "./RelayConfiguration";
 import type { PairingSessionView } from "../services/deviceAccess";
 import { remotePhoneUrl, type RemoteAccessState } from "../services/remoteServer";
 
@@ -45,6 +46,10 @@ export function Onboarding({
   onExit,
   remoteAccess = NO_REMOTE_ACCESS,
   onOpenPairing,
+  onCancelPairing,
+  onRetry,
+  relayUrl = "",
+  onConfigureRelay,
   showRemoteSetup = false,
 }: {
   onAdd: (name: string, source: PlaylistSource) => void;
@@ -52,6 +57,10 @@ export function Onboarding({
   onExit: () => void;
   remoteAccess?: RemoteAccessState;
   onOpenPairing?: () => PairingSessionView | null;
+  onCancelPairing?: () => void;
+  onRetry?: () => void;
+  relayUrl?: string;
+  onConfigureRelay?: (url: string) => Promise<void>;
   showRemoteSetup?: boolean;
 }) {
   const { t, direction } = useLocale();
@@ -60,6 +69,7 @@ export function Onboarding({
   const manual = useRef<HTMLElement>(null);
   const first = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const automaticPairing = useRef(false);
 
   const phoneTabRef = useRef<HTMLButtonElement>(null);
   const tokenTabRef = useRef<HTMLButtonElement>(null);
@@ -128,15 +138,22 @@ export function Onboarding({
 
   // Trigger pairing session when phone tab is activated
   useEffect(() => {
+    if (activeTab !== "phone" || remoteAccess.status !== "listening") {
+      automaticPairing.current = false;
+      return;
+    }
+    if (remoteAccess.pairing) automaticPairing.current = true;
     if (
       activeTab === "phone" &&
       onOpenPairing &&
       !remoteAccess.pairing &&
+      !remoteAccess.pairingError && !remoteAccess.connectedDevice && !automaticPairing.current &&
       remoteAccess.status === "listening"
     ) {
+      automaticPairing.current = true;
       onOpenPairing();
     }
-  }, [activeTab, onOpenPairing, remoteAccess.pairing, remoteAccess.status]);
+  }, [activeTab, onOpenPairing, remoteAccess.pairing, remoteAccess.status, remoteAccess.pairingError, remoteAccess.connectedDevice]);
 
   // Render QR Canvas when active tab is phone
   useEffect(() => {
@@ -360,6 +377,7 @@ export function Onboarding({
               onClick={() => {
                 setActiveTab("phone");
                 if (onOpenPairing && !remoteAccess.pairing) {
+                  automaticPairing.current = true;
                   onOpenPairing();
                 }
               }}
@@ -437,6 +455,7 @@ export function Onboarding({
 
           {activeTab === "phone" && (
             <div className="fields" id="fields-phone">
+              {onConfigureRelay && <RelayConfiguration value={relayUrl} onSave={onConfigureRelay} />}
               <div className="pair">
                 <div
                   className={`pair-code ${!setupUrl || (remoteAccess.status === "unavailable" && Boolean(remoteAccess.error)) ? "blank" : ""}`}
@@ -458,7 +477,7 @@ export function Onboarding({
                         {t(remoteAccess.errorKey ?? "remote.unavailable")}
                       </p>
                       <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.4, marginBottom: 16 }}>
-                        {t("remote.manualFallback")}
+                        {t(relayUrl ? "remote.relayTrust" : "remote.manualFallback")}
                       </p>
                       <button
                         type="button"
@@ -520,6 +539,13 @@ export function Onboarding({
                           : t("remote.starting")}
                   </p>
                 </div>
+              </div>
+              <div className="actions">
+                {remoteAccess.pairing && onCancelPairing && <button type="button" className="btn tonal" onClick={onCancelPairing}>{t("remote.cancelPairing")}</button>}
+                {!remoteAccess.pairing && (onRetry || onOpenPairing) && <button type="button" className="btn tonal" onClick={() => {
+                  if (remoteAccess.status === "listening") onOpenPairing?.();
+                  else onRetry?.();
+                }}>{t("remote.retry")}</button>}
               </div>
             </div>
           )}

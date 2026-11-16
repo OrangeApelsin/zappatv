@@ -174,6 +174,10 @@ const ENGLISH = {
   "remote.relayIdentity": "The relay rejected this TV's credentials. Check the server registration.",
   "remote.relayStorage": "The TV could not save its relay configuration. Check available storage.",
   "remote.relayOffline": "The relay is unavailable. Remote access will reconnect automatically.",
+  "remote.relayUrl": "Remote relay URL (HTTPS)",
+  "remote.relayHint": "Enter the address of your remote server. Server support must be installed separately. Leave blank to use the TV's local server when available.",
+  "remote.relayTrust": "Use a relay you trust: it handles playlist credentials. A relay outage does not stop TV playback or the physical remote.",
+  "remote.relaySaved": "Relay address saved. Check the connection status before pairing.",
   "remote.manualFallback": "You can still enter the playlist on the left.",
   "remote.pairedHint":
     "Authorised devices can manage playlists, settings, and playback while Zappa TV is running.",

@@ -9,6 +9,7 @@ import {
 } from "../../services/deviceAccess";
 import { Confirm } from "../Confirm";
 import { RemoteSetup } from "../RemoteSetup";
+import { RelayConfiguration } from "../RelayConfiguration";
 
 export function Devices({
   remoteAccess,
@@ -67,10 +68,11 @@ export function Devices({
   return (
     <div className="device-access">
       <h3>{t("settings.remoteAccess")}</h3>
+      {remoteAccess.configureRelay && <RelayConfiguration value={remoteAccess.relayUrl ?? ""} onSave={remoteAccess.configureRelay} />}
       {!remoteAccess.pairing && (
         <>
           <p className="sheet-lead">{t("remote.pairedHint")}</p>
-          <p className="sheet-lead">{t("remote.trustedNetwork")}</p>
+          <p className="sheet-lead">{t(remoteAccess.relayUrl ? "remote.relayTrust" : "remote.trustedNetwork")}</p>
         </>
       )}
       {(remoteAccess.pairing || showConnected) && (
